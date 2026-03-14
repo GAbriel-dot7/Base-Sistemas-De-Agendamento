@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clientes — SGCM</title>
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon" id="sidebarEmoji">✂️</div>
+      <div>
+        <div class="sidebar-logo-text" id="sidebarBusinessName">Carregando...</div>
+        <div class="sidebar-logo-sub">Painel Administrativo</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Menu Principal</div>
+      <a href="../index.html" class="nav-item" data-page="#dashboard"><span class="nav-item-icon">📊</span> Dashboard</a>
+      <a href="clientes.html" class="nav-item active" data-page="#clientes"><span class="nav-item-icon">👥</span> Clientes</a>
+      <a href="servicos.html" class="nav-item" data-page="#servicos"><span class="nav-item-icon">✨</span> Serviços</a>
+      <a href="agendamentos.html" class="nav-item" data-page="#agendamentos">
+        <span class="nav-item-icon">📅</span> Agendamentos
+        <span class="nav-badge" id="agBadge" style="display:none">0</span>
+      </a>
+      <div class="nav-section-label" style="margin-top:8px">Relatórios</div>
+      <a href="historico.html" class="nav-item" data-page="#historico"><span class="nav-item-icon">📋</span> Histórico</a>
+      <div class="nav-section-label" style="margin-top:8px">Sistema</div>
+      <a href="config.html" class="nav-item" data-page="#config"><span class="nav-item-icon">⚙️</span> Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="ownerAvatar">J</div>
+        <div class="user-info">
+          <div class="user-info-name" id="ownerName">João</div>
+          <div class="user-info-role">Administrador</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">Clientes</div>
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Buscar clientes..." id="topbarSearchInput" />
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-btn" data-tooltip="Notificações">🔔</button>
+        <div class="topbar-avatar" id="topbarAvatar">J</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>👥 Clientes</h1>
+          <p id="clientesCount">Carregando...</p>
+        </div>
+        <button class="btn btn-primary" onclick="openClienteModal()">
+          ➕ Adicionar Cliente
+        </button>
+      </div>
+
+      <!-- Busca e Filtros -->
+      <div class="page-search">
+        <div class="page-search-input">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchClientes" placeholder="Buscar por nome, telefone ou email..." />
+        </div>
+      </div>
+
+      <!-- Tabela de Clientes -->
+      <div class="card" style="overflow:hidden">
+        <div class="table-wrapper" style="border:none;border-radius:0">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Email</th>
+                <th>Observações</th>
+                <th>Cadastrado em</th>
+                <th style="text-align:right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="clientesTableBody">
+              <!-- Preenchido via JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="clientesEmpty" class="empty-state hidden">
+          <div class="empty-state-icon">👥</div>
+          <h3>Nenhum cliente cadastrado</h3>
+          <p>Clique em "Adicionar Cliente" para começar a construir sua base.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR/EDITAR CLIENTE -->
+<div class="modal-overlay" id="clienteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="clienteModalTitle">➕ Novo Cliente</span>
+      <button class="modal-close" onclick="Modal.close('clienteModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="clienteId" />
+      <div class="form-row">
+        <div class="form-group" style="grid-column:span 2">
+          <label class="form-label">Nome Completo *</label>
+          <input type="text" id="clienteNome" class="form-control" placeholder="Ex: Ana Paula Silva" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Telefone / WhatsApp</label>
+          <input type="tel" id="clienteTelefone" class="form-control" placeholder="(11) 99999-9999" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="clienteEmail" class="form-control" placeholder="email@exemplo.com" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea id="clienteObs" class="form-control" placeholder="Preferências, alergias, informações importantes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('clienteModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCliente()">💾 Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER HISTÓRICO DO CLIENTE -->
+<div class="modal-overlay" id="clienteHistModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title" id="clienteHistTitle">📋 Histórico do Cliente</span>
+      <button class="modal-close" onclick="Modal.close('clienteHistModal')">×</button>
+    </div>
+    <div class="modal-body" id="clienteHistBody" style="padding:0">
+      <!-- Preenchido via JS -->
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ Confirmar Exclusão</span>
+      <button class="modal-close" onclick="Modal.close('confirmOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="color:var(--text-secondary);font-size:0.9rem">Tem certeza que deseja excluir este cliente?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('confirmOverlay')">Cancelar</button>
+      <button class="btn btn-danger" id="confirmYes">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="notifications-wrapper" id="notificationsWrapper"></div>
+
+<script src="../js/db.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+  // ────────────────────────────────────
+  // CLIENTES — Lógica
+  // ────────────────────────────────────
+
+  function renderClientes(filter = '') {
+    const tbody = document.getElementById('clientesTableBody');
+    const emptyState = document.getElementById('clientesEmpty');
+    let clientes = DB.getClientes();
+
+    if (filter) {
+      const q = filter.toLowerCase();
+      clientes = clientes.filter(c =>
+        (c.nome || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.telefone || '').includes(q)
+      );
+    }
+
+    document.getElementById('clientesCount').textContent =
+      `${clientes.length} cliente${clientes.length !== 1 ? 's' : ''} cadastrado${clientes.length !== 1 ? 's' : ''}`;
+
+    tbody.innerHTML = '';
+
+    if (clientes.length === 0) {
+      emptyState.classList.remove('hidden');
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+
+    clientes.forEach(c => {
+      const color = avatarColor(c.nome);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div class="client-cell">
+            <div class="avatar" style="background:${color}">${Format.initials(c.nome)}</div>
+            <div>
+              <div style="font-weight:600">${c.nome || '—'}</div>
+            </div>
+          </div>
+        </td>
+        <td class="text-mono">${Format.phone(c.telefone)}</td>
+        <td style="color:var(--text-secondary)">${c.email || '—'}</td>
+        <td style="color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.obs || ''}">${c.obs || '—'}</td>
+        <td style="color:var(--text-muted)">${Format.date(c.createdAt?.slice(0,10))}</td>
+        <td>
+          <div class="table-actions" style="justify-content:flex-end">
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="verHistorico('${c.id}')" data-tooltip="Ver histórico">📋</button>
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarCliente('${c.id}')" data-tooltip="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirCliente('${c.id}', '${(c.nome || '').replace(/'/g,"\\'")} ')" data-tooltip="Excluir">🗑️</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function openClienteModal(id = null) {
+    document.getElementById('clienteId').value = '';
+    document.getElementById('clienteNome').value = '';
+    document.getElementById('clienteTelefone').value = '';
+    document.getElementById('clienteEmail').value = '';
+    document.getElementById('clienteObs').value = '';
+    document.getElementById('clienteModalTitle').textContent = '➕ Novo Cliente';
+    Modal.open('clienteModal');
+    setTimeout(() => document.getElementById('clienteNome').focus(), 300);
+  }
+
+  function editarCliente(id) {
+    const c = DB.getClienteById(id);
+    if (!c) return;
+    document.getElementById('clienteId').value = c.id;
+    document.getElementById('clienteNome').value = c.nome || '';
+    document.getElementById('clienteTelefone').value = c.telefone || '';
+    document.getElementById('clienteEmail').value = c.email || '';
+    document.getElementById('clienteObs').value = c.obs || '';
+    document.getElementById('clienteModalTitle').textContent = '✏️ Editar Cliente';
+    Modal.open('clienteModal');
+    setTimeout(() => document.getElementById('clienteNome').focus(), 300);
+  }
+
+  function salvarCliente() {
+    const nome = document.getElementById('clienteNome').value.trim();
+    if (!nome) {
+      Notify.error('Campo obrigatório', 'Por favor, informe o nome do cliente.');
+      document.getElementById('clienteNome').focus();
+      return;
+    }
+
+    const cliente = {
+      id: document.getElementById('clienteId').value || null,
+      nome,
+      telefone: document.getElementById('clienteTelefone').value.trim(),
+      email: document.getElementById('clienteEmail').value.trim(),
+      obs: document.getElementById('clienteObs').value.trim(),
+    };
+
+    DB.saveCliente(cliente);
+    Modal.close('clienteModal');
+    renderClientes();
+    Notify.success('Cliente salvo!', `${nome} foi ${cliente.id ? 'atualizado' : 'cadastrado'} com sucesso.`);
+  }
+
+  function excluirCliente(id, nome) {
+    confirmDelete(`Excluir o cliente "${nome}"? Esta ação não pode ser desfeita.`, () => {
+      DB.deleteCliente(id);
+      renderClientes();
+      Notify.success('Cliente removido', 'O cliente foi excluído com sucesso.');
+    });
+  }
+
+  function verHistorico(clienteId) {
+    const c = DB.getClienteById(clienteId);
+    if (!c) return;
+
+    const hist = DB.getHistorico().filter(h => h.clienteId === clienteId);
+    const color = avatarColor(c.nome);
+
+    document.getElementById('clienteHistTitle').textContent = `📋 Histórico — ${c.nome}`;
+
+    const body = document.getElementById('clienteHistBody');
+
+    if (hist.length === 0) {
+      body.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Nenhum atendimento registrado</h3><p>Os atendimentos aparecerão aqui após serem concluídos.</p></div>`;
+    } else {
+      const total = hist.reduce((acc, h) => acc + (parseFloat(h.valor) || 0), 0);
+      body.innerHTML = `
+        <div style="padding:16px 20px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
+          <div class="avatar" style="background:${color};width:44px;height:44px;font-size:16px">${Format.initials(c.nome)}</div>
+          <div>
+            <div style="font-weight:700;font-size:1rem">${c.nome}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted)">${hist.length} atendimento${hist.length !== 1 ? 's' : ''} · Total: ${Format.currency(total)}</div>
+          </div>
+        </div>
+        <table style="width:100%">
+          <thead><tr>
+            <th>Serviço</th>
+            <th>Data</th>
+            <th>Valor</th>
+          </tr></thead>
+          <tbody>
+            ${hist.map(h => {
+              const s = DB.getServicoPorId(h.servicoId);
+              return `<tr>
+                <td style="font-weight:500">${s?.nome || '—'}</td>
+                <td style="color:var(--text-muted)">${Format.date(h.data)}</td>
+                <td style="font-weight:600;color:var(--green)">${Format.currency(h.valor)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    Modal.open('clienteHistModal');
+  }
+
+  // Busca em tempo real
+  document.getElementById('searchClientes').addEventListener('input', (e) => {
+    renderClientes(e.target.value);
+  });
+
+  // Busca via topbar
+  const topbarSearch = document.getElementById('topbarSearchInput');
+  const urlParams = new URLSearchParams(window.location.search);
+  const searchParam = urlParams.get('search');
+  if (searchParam) {
+    topbarSearch.value = searchParam;
+    document.getElementById('searchClientes').value = searchParam;
+  }
+  topbarSearch?.addEventListener('input', (e) => {
+    document.getElementById('searchClientes').value = e.target.value;
+    renderClientes(e.target.value);
+  });
+
+  // Salvar com Enter no modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.getElementById('clienteModal').classList.contains('active')) {
+      if (document.activeElement.tagName !== 'TEXTAREA') salvarCliente();
+    }
+  });
+
+  // Init
+  document.addEventListener('DOMContentLoaded', () => {
+    renderClientes(searchParam || '');
+    document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
+  });
+</script>
+</body>
+</html>

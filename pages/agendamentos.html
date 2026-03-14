@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendamentos — SGCM</title>
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+<body>
+
+<div class="app-layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon" id="sidebarEmoji">✂️</div>
+      <div>
+        <div class="sidebar-logo-text" id="sidebarBusinessName">Carregando...</div>
+        <div class="sidebar-logo-sub">Painel Administrativo</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Menu Principal</div>
+      <a href="../index.html" class="nav-item" data-page="#dashboard"><span class="nav-item-icon">📊</span> Dashboard</a>
+      <a href="clientes.html" class="nav-item" data-page="#clientes"><span class="nav-item-icon">👥</span> Clientes</a>
+      <a href="servicos.html" class="nav-item" data-page="#servicos"><span class="nav-item-icon">✨</span> Serviços</a>
+      <a href="agendamentos.html" class="nav-item active" data-page="#agendamentos">
+        <span class="nav-item-icon">📅</span> Agendamentos
+        <span class="nav-badge" id="agBadge" style="display:none">0</span>
+      </a>
+      <div class="nav-section-label" style="margin-top:8px">Relatórios</div>
+      <a href="historico.html" class="nav-item" data-page="#historico"><span class="nav-item-icon">📋</span> Histórico</a>
+      <div class="nav-section-label" style="margin-top:8px">Sistema</div>
+      <a href="config.html" class="nav-item" data-page="#config"><span class="nav-item-icon">⚙️</span> Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="ownerAvatar">J</div>
+        <div class="user-info">
+          <div class="user-info-name" id="ownerName">João</div>
+          <div class="user-info-role">Administrador</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="topbar-title">Agendamentos</div>
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Buscar agendamentos..." id="topbarSearchInput" />
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-btn" data-tooltip="Notificações">🔔</button>
+        <div class="topbar-avatar" id="topbarAvatar">J</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>📅 Agendamentos</h1>
+          <p id="agendamentosCount">Carregando...</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAgModal()">
+          ➕ Novo Agendamento
+        </button>
+      </div>
+
+      <!-- Filtros de Data -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="filterDate('hoje')" id="filterHoje">📅 Hoje</button>
+        <button class="btn btn-secondary btn-sm" onclick="filterDate('amanha')" id="filterAmanha">📅 Amanhã</button>
+        <button class="btn btn-secondary btn-sm" onclick="filterDate('semana')" id="filterSemana">📆 Esta Semana</button>
+        <button class="btn btn-secondary btn-sm" onclick="filterDate('todos')" id="filterTodos">📋 Todos</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+          <label style="font-size:0.82rem;font-weight:600;color:var(--text-muted)">Data específica:</label>
+          <input type="date" id="filterDataEspecifica" class="form-control" style="width:auto;padding:6px 10px;font-size:0.82rem" onchange="filterDate('especifica')" />
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="card" style="overflow:hidden">
+        <div class="table-wrapper" style="border:none;border-radius:0">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Serviço</th>
+                <th>Data & Hora</th>
+                <th>Valor</th>
+                <th>Observação</th>
+                <th>Status</th>
+                <th style="text-align:right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="agendamentosTableBody"></tbody>
+          </table>
+        </div>
+        <div id="agendamentosEmpty" class="empty-state hidden">
+          <div class="empty-state-icon">📅</div>
+          <h3>Nenhum agendamento encontrado</h3>
+          <p>Crie um novo agendamento para começar.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL AGENDAMENTO -->
+<div class="modal-overlay" id="agModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title" id="agModalTitle">📅 Novo Agendamento</span>
+      <button class="modal-close" onclick="Modal.close('agModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="agId" />
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Cliente *</label>
+          <select id="agCliente" class="form-control">
+            <option value="">Selecionar cliente...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Serviço *</label>
+          <select id="agServico" class="form-control" onchange="onServicoChange()">
+            <option value="">Selecionar serviço...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data *</label>
+          <input type="date" id="agData" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora *</label>
+          <input type="time" id="agHora" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" id="agValor" class="form-control" placeholder="0,00" step="0.01" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="agStatus" class="form-control">
+            <option value="agendado">📅 Agendado</option>
+            <option value="concluido">✅ Concluído</option>
+            <option value="cancelado">❌ Cancelado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Observação</label>
+        <textarea id="agObs" class="form-control" placeholder="Informações adicionais..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('agModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAgendamento()">💾 Salvar Agendamento</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ Confirmar</span>
+      <button class="modal-close" onclick="Modal.close('confirmOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="color:var(--text-secondary);font-size:0.9rem">Confirmar ação?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modal.close('confirmOverlay')">Cancelar</button>
+      <button class="btn btn-danger" id="confirmYes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="notifications-wrapper" id="notificationsWrapper"></div>
+
+<script src="../js/db.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+
+  let currentFilter = 'hoje';
+
+  function getFilteredAgs() {
+    const all = DB.getAgendamentos();
+    const hoje = new Date().toISOString().slice(0,10);
+
+    if (currentFilter === 'hoje') return all.filter(a => a.data === hoje);
+    if (currentFilter === 'amanha') {
+      const amanha = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+      return all.filter(a => a.data === amanha);
+    }
+    if (currentFilter === 'semana') {
+      const d = new Date();
+      const start = new Date(d); start.setDate(d.getDate() - d.getDay());
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      return all.filter(a => a.data >= start.toISOString().slice(0,10) && a.data <= end.toISOString().slice(0,10));
+    }
+    if (currentFilter === 'especifica') {
+      const sel = document.getElementById('filterDataEspecifica').value;
+      if (!sel) return all;
+      return all.filter(a => a.data === sel);
+    }
+    return all; // todos
+  }
+
+  function filterDate(type) {
+    currentFilter = type;
+    ['hoje','amanha','semana','todos'].forEach(t => {
+      const btn = document.getElementById(`filter${t.charAt(0).toUpperCase()+t.slice(1)}`);
+      if (btn) btn.style.background = t === type ? 'var(--primary)' : '';
+      if (btn) btn.style.color = t === type ? '#fff' : '';
+      if (btn) btn.style.borderColor = t === type ? 'var(--primary)' : '';
+    });
+    renderAgendamentos();
+  }
+
+  function renderAgendamentos(search = '') {
+    const tbody = document.getElementById('agendamentosTableBody');
+    const empty = document.getElementById('agendamentosEmpty');
+    let ags = getFilteredAgs().sort((a,b) => {
+      if (a.data !== b.data) return a.data > b.data ? 1 : -1;
+      return a.hora > b.hora ? 1 : -1;
+    });
+
+    if (search) {
+      const q = search.toLowerCase();
+      ags = ags.filter(ag => {
+        const c = DB.getClienteById(ag.clienteId);
+        const s = DB.getServicoPorId(ag.servicoId);
+        return (c?.nome||'').toLowerCase().includes(q) || (s?.nome||'').toLowerCase().includes(q);
+      });
+    }
+
+    const label = currentFilter === 'hoje' ? 'hoje' : currentFilter === 'amanha' ? 'amanhã' : 'no período';
+    document.getElementById('agendamentosCount').textContent =
+      `${ags.length} agendamento${ags.length !== 1 ? 's' : ''} ${label}`;
+
+    tbody.innerHTML = '';
+
+    if (ags.length === 0) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    ags.forEach(ag => {
+      const c = DB.getClienteById(ag.clienteId);
+      const s = DB.getServicoPorId(ag.servicoId);
+      const color = avatarColor(c?.nome || '');
+
+      const statusMap = {
+        agendado: '<span class="badge badge-blue">Agendado</span>',
+        concluido: '<span class="badge badge-green">Concluído</span>',
+        cancelado: '<span class="badge badge-red">Cancelado</span>',
+      };
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div class="client-cell">
+            <div class="avatar" style="background:${color}">${Format.initials(c?.nome||'?')}</div>
+            <span style="font-weight:600">${c?.nome || '<span style="color:var(--text-muted)">Cliente removido</span>'}</span>
+          </div>
+        </td>
+        <td style="font-weight:500">${s?.nome || '<span style="color:var(--text-muted)">Serviço removido</span>'}</td>
+        <td>
+          <div style="font-weight:600">${Format.date(ag.data)}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${ag.hora || '—'}</div>
+        </td>
+        <td style="font-weight:700;color:var(--green)">${Format.currency(ag.valor)}</td>
+        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ag.observacao || '—'}</td>
+        <td>${statusMap[ag.status] || statusMap.agendado}</td>
+        <td>
+          <div class="table-actions" style="justify-content:flex-end">
+            ${ag.status === 'agendado' ? `<button class="btn btn-success btn-sm" onclick="concluirAg('${ag.id}')" data-tooltip="Marcar como concluído">✅ Concluir</button>` : ''}
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarAg('${ag.id}')" data-tooltip="Editar">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirAg('${ag.id}')" data-tooltip="Excluir">🗑️</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function populateSelects() {
+    const clienteSelect = document.getElementById('agCliente');
+    const servicoSelect = document.getElementById('agServico');
+
+    const clientes = DB.getClientes();
+    const servicos = DB.getServicos();
+
+    clienteSelect.innerHTML = '<option value="">Selecionar cliente...</option>';
+    clientes.forEach(c => {
+      clienteSelect.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    });
+
+    servicoSelect.innerHTML = '<option value="">Selecionar serviço...</option>';
+    servicos.forEach(s => {
+      servicoSelect.innerHTML += `<option value="${s.id}" data-preco="${s.preco}">${s.nome} — ${Format.currency(s.preco)}</option>`;
+    });
+  }
+
+  function onServicoChange() {
+    const sel = document.getElementById('agServico');
+    const opt = sel.options[sel.selectedIndex];
+    const preco = opt?.dataset?.preco;
+    if (preco) document.getElementById('agValor').value = preco;
+  }
+
+  function openAgModal() {
+    populateSelects();
+    document.getElementById('agId').value = '';
+    document.getElementById('agCliente').value = '';
+    document.getElementById('agServico').value = '';
+    document.getElementById('agData').value = new Date().toISOString().slice(0,10);
+    document.getElementById('agHora').value = '';
+    document.getElementById('agValor').value = '';
+    document.getElementById('agStatus').value = 'agendado';
+    document.getElementById('agObs').value = '';
+    document.getElementById('agModalTitle').textContent = '📅 Novo Agendamento';
+    Modal.open('agModal');
+  }
+
+  function editarAg(id) {
+    const ag = DB.getAgendamentos().find(a => a.id === id);
+    if (!ag) return;
+    populateSelects();
+    document.getElementById('agId').value = ag.id;
+    document.getElementById('agCliente').value = ag.clienteId || '';
+    document.getElementById('agServico').value = ag.servicoId || '';
+    document.getElementById('agData').value = ag.data || '';
+    document.getElementById('agHora').value = ag.hora || '';
+    document.getElementById('agValor').value = ag.valor || '';
+    document.getElementById('agStatus').value = ag.status || 'agendado';
+    document.getElementById('agObs').value = ag.observacao || '';
+    document.getElementById('agModalTitle').textContent = '✏️ Editar Agendamento';
+    Modal.open('agModal');
+  }
+
+  function salvarAgendamento() {
+    const clienteId = document.getElementById('agCliente').value;
+    const servicoId = document.getElementById('agServico').value;
+    const data = document.getElementById('agData').value;
+    const hora = document.getElementById('agHora').value;
+
+    if (!clienteId) { Notify.error('Campo obrigatório', 'Selecione um cliente.'); return; }
+    if (!servicoId) { Notify.error('Campo obrigatório', 'Selecione um serviço.'); return; }
+    if (!data) { Notify.error('Campo obrigatório', 'Informe a data.'); return; }
+    if (!hora) { Notify.error('Campo obrigatório', 'Informe o horário.'); return; }
+
+    const ag = {
+      id: document.getElementById('agId').value || null,
+      clienteId,
+      servicoId,
+      data,
+      hora,
+      valor: document.getElementById('agValor').value || '0',
+      status: document.getElementById('agStatus').value,
+      observacao: document.getElementById('agObs').value.trim(),
+    };
+
+    DB.saveAgendamento(ag);
+    Modal.close('agModal');
+    renderAgendamentos();
+    Notify.success('Agendamento salvo!', `Agendado para ${Format.date(data)} às ${hora}.`);
+  }
+
+  function concluirAg(id) {
+    const ag = DB.getAgendamentos().find(a => a.id === id);
+    const c = DB.getClienteById(ag?.clienteId);
+    confirmDelete(`Marcar atendimento de ${c?.nome || 'cliente'} como concluído?`, () => {
+      document.getElementById('confirmYes').textContent = 'Confirmar';
+      DB.concluirAgendamento(id);
+      renderAgendamentos();
+      Notify.success('Atendimento concluído!', 'Registrado no histórico.');
+    });
+    document.getElementById('confirmYes').textContent = 'Concluir';
+  }
+
+  function excluirAg(id) {
+    confirmDelete('Excluir este agendamento?', () => {
+      DB.deleteAgendamento(id);
+      renderAgendamentos();
+      Notify.success('Agendamento removido', '');
+    });
+  }
+
+  // Filtro inicial
+  filterDate('hoje');
+
+  document.getElementById('topbarSearchInput')?.addEventListener('input', (e) => {
+    renderAgendamentos(e.target.value);
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
+    filterDate('hoje');
+  });
+</script>
+</body>
+</html>
