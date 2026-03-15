@@ -1157,44 +1157,350 @@ tbody tr:hover { background: var(--bg); }
 }
 
 /* =============================================
-   RESPONSIVE
+   BOTÃO HAMBURGUER
+   — Oculto em desktop; aparece em mobile (≤768px)
+   ============================================= */
+
+.menu-toggle {
+  /* Oculto por padrão em desktop */
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  /* Área de toque confortável: 44×44px mínimo (Apple HIG) */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+
+  /* Fica à frente de outros elementos da topbar */
+  position: relative;
+  z-index: 2;
+
+  transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.menu-toggle:hover  { background: var(--bg); }
+.menu-toggle:active { transform: scale(0.90); }
+
+/* ── As três linhas ── */
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 22px;
+  height: 16px;
+  pointer-events: none; /* o clique é no botão pai */
+}
+
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text-primary);
+  transform-origin: center center;
+  transition:
+    transform 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity   0.20s ease,
+    width     0.20s ease;
+}
+
+/* ── Animação hamburger → X (quando menu aberto) ── */
+.menu-toggle.is-open .hamburger span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.menu-toggle.is-open .hamburger span:nth-child(2) {
+  opacity: 0;
+  width: 0;
+}
+.menu-toggle.is-open .hamburger span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* =============================================
+   OVERLAY ESCURO
+   — Aparece atrás da sidebar em mobile,
+     escurece o conteúdo e captura clique para fechar
+   ============================================= */
+
+.sidebar-overlay {
+  /* Invisível e inativo em desktop */
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 98; /* abaixo da sidebar (100) mas acima do conteúdo */
+
+  background: rgba(15, 23, 42, 0.60);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+
+  /* Cursor indica que é clicável para fechar */
+  cursor: pointer;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* =============================================
+   RESPONSIVE — TABLET  ≤1024px
    ============================================= */
 
 @media (max-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .dashboard-grid .col-2 { grid-column: span 2; }
-  .dashboard-grid .col-3 { grid-column: span 2; }
+  .dashboard-grid                   { grid-template-columns: 1fr 1fr; }
+  .dashboard-grid .col-2            { grid-column: span 2; }
+  .dashboard-grid .col-3            { grid-column: span 2; }
 }
 
-@media (max-width: 768px) {
-  :root { --sidebar-width: 0px; }
+/* =============================================
+   RESPONSIVE — MOBILE  ≤768px
+   ============================================= */
 
-  .sidebar {
-    transform: translateX(-240px);
-    width: 240px;
+@media (max-width: 768px) {
+
+  /* ── Variáveis mobile ── */
+  :root {
+    --sidebar-width: 0px;       /* conteúdo ocupa 100% da largura */
+    --topbar-height: 56px;
   }
 
+  /* ── Sidebar: gaveta deslizante da esquerda ── */
+  .sidebar {
+    /* Sai da tela pela esquerda */
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.28s ease;
+
+    /* Máximo de 80% da largura da tela */
+    width: 80vw;
+    max-width: 280px;
+
+    /* Fica sobre o overlay (z-index 98) e conteúdo */
+    z-index: 100;
+    box-shadow: none;
+  }
+
+  /* Sidebar aberta */
   .sidebar.mobile-open {
     transform: translateX(0);
-    width: 240px;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.25);
   }
 
-  .main-content { margin-left: 0; }
+  /* Ativa o overlay em mobile */
+  .sidebar-overlay {
+    display: block;
+  }
 
+  /* ── Conteúdo principal: ocupa a tela toda ── */
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* ── Topbar mobile ── */
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+    height: var(--topbar-height);
+  }
+
+  /* Hamburguer aparece */
+  .menu-toggle {
+    display: flex;
+  }
+
+  /* Título fica menor */
+  .topbar-title {
+    font-size: 0.92rem;
+    flex: 1;               /* ocupa o espaço disponível */
+  }
+
+  /* Busca da topbar oculta (existe busca dentro das páginas) */
+  .topbar-search {
+    display: none;
+  }
+
+  /* Ações mais compactas */
+  .topbar-actions {
+    gap: 6px;
+    margin-left: 0; /* título já tem flex:1 */
+  }
+
+  /* ── Conteúdo das páginas ── */
+  .page-content {
+    padding: 16px 14px;
+  }
+
+  /* Page header empilha em coluna */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  /* Botão de ação ocupa largura total */
+  .page-header > .btn,
+  .page-header > a.btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Stat cards: 2 colunas ── */
+  .stat-cards {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card        { padding: 14px 12px; }
+  .stat-card-value  { font-size: 1.45rem; }
+  .stat-card-change { font-size: 0.7rem; }
+
+  .stat-card-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  /* ── Dashboard grid: coluna única ── */
   .dashboard-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .dashboard-grid .col-2,
-  .dashboard-grid .col-3 { grid-column: span 1; }
+  .dashboard-grid .col-3 {
+    grid-column: span 1;
+  }
 
-  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  /* Card "Progresso do Dia" empilha verticalmente */
+  .day-progress-card {
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 20px !important;
+    text-align: center;
+  }
 
-  .stat-cards { grid-template-columns: 1fr 1fr; }
+  /* ── Formulários: coluna única ── */
+  .form-row,
+  .form-row-3 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 
-  .page-content { padding: 16px; }
+  /* ── Tabelas: scroll horizontal ── */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Dica visual de scroll */
+    background:
+      linear-gradient(to right, white 30%, rgba(255,255,255,0)),
+      linear-gradient(to right, rgba(255,255,255,0), white 70%) 0 100%,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.08), transparent),
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.08), transparent) 0 100%;
+    background-repeat: no-repeat;
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+
+  table      { min-width: 540px; }
+  th, td     { padding: 11px 12px; }
+
+  /* ── Barra de busca interna ── */
+  .page-search {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .page-search-input {
+    max-width: 100%;
+  }
+
+  .page-search-input input {
+    width: 100%;
+  }
+
+  /* ── Filtros da página de agendamentos ── */
+  .filter-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* ── Grade de serviços: 1 coluna ── */
+  #servicosGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Modais: bottom sheet (sobe da parte inferior) ── */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 92vh;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .modal-header { padding: 18px 18px 14px; }
+  .modal-body   { padding: 18px; }
+  .modal-footer { padding: 14px 18px; }
+
+  /* ── Notificações: largura da tela ── */
+  .notifications-wrapper {
+    bottom: 12px;
+    right: 10px;
+    left: 10px;
+  }
+
+  .notification {
+    min-width: unset;
+    max-width: 100%;
+  }
+
+  /* ── Configurações ── */
+  .config-section-body .btn-row {
+    flex-direction: column;
+  }
+}
+
+/* =============================================
+   RESPONSIVE — TELAS MUITO PEQUENAS  ≤390px
+   ============================================= */
+
+@media (max-width: 390px) {
+  /* Stat cards em coluna única */
+  .stat-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Esconde botões extras da topbar (mantém avatar) */
+  .topbar-actions .topbar-btn:not(:last-of-type) {
+    display: none;
+  }
+
+  .page-content {
+    padding: 12px 10px;
+  }
 }
 
 /* =============================================

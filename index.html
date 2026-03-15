@@ -9,6 +9,8 @@
 <body>
 
 <div class="app-layout">
+  <!-- OVERLAY MOBILE: escurece o fundo e fecha a sidebar ao toque -->
+  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -59,18 +61,33 @@
 
     <!-- TOPBAR -->
     <header class="topbar">
-      <div class="topbar-title" id="topbarBusinessName">Dashboard</div>
+
+      <!-- Hamburguer: visível apenas em mobile (≤768px) -->
+      <button class="menu-toggle" id="menuToggle"
+              aria-label="Abrir menu de navegação"
+              aria-expanded="false"
+              aria-controls="sidebar">
+        <div class="hamburger" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+
+      <div class="topbar-title" id="topbarPageTitle">Dashboard</div>
+
       <div class="topbar-search">
         <span class="search-icon">🔍</span>
         <input type="text" placeholder="Buscar clientes, serviços..." id="topbarSearchInput" />
       </div>
       <div class="topbar-actions">
-        <button class="topbar-btn" data-tooltip="Notificações" id="notifBtn">
+        <button class="topbar-btn" id="notifBtn" data-tooltip="Notificações" aria-label="Notificações">
           🔔
-          <span class="notif-dot" id="notifDot"></span>
+          <span class="notif-dot" id="notifDot" style="display:none"></span>
         </button>
-        <div class="topbar-avatar" id="topbarAvatar">J</div>
+        <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
+
     </header>
 
     <!-- PAGE CONTENT -->
@@ -140,7 +157,7 @@
         </div>
 
         <!-- Contador do Dia -->
-        <div class="card" style="grid-column: span 3; display:flex; align-items:center; gap:24px; padding:24px">
+        <div class="card day-progress-card" style="grid-column: span 3; display:flex; align-items:center; gap:24px; padding:24px">
           <div style="flex:1">
             <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Progresso do Dia</div>
             <div style="font-size:1.3rem;font-weight:700;color:var(--text-primary)" id="progressLabel">0 de 0 atendimentos</div>
@@ -184,9 +201,6 @@
 </div>
 
 <div class="notifications-wrapper" id="notificationsWrapper"></div>
-
-<script src="js/db.js"></script>
-<script src="js/ui.js"></script>
 <script>
   // ────────────────────────────────────
   // DASHBOARD — Renderização
@@ -320,5 +334,9 @@
     renderDashboard();
   });
 </script>
+
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/mobile.js"></script>
 </body>
 </html>

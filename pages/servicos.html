@@ -9,7 +9,10 @@
 <body>
 
 <div class="app-layout">
+  <!-- OVERLAY MOBILE: escurece o fundo e fecha a sidebar ao toque -->
+  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
+  <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon" id="sidebarEmoji">✂️</div>
@@ -45,16 +48,34 @@
 
   <div class="main-content">
 
+    <!-- TOPBAR -->
     <header class="topbar">
-      <div class="topbar-title">Serviços</div>
+
+      <!-- Hamburguer: visível apenas em mobile (≤768px) -->
+      <button class="menu-toggle" id="menuToggle"
+              aria-label="Abrir menu de navegação"
+              aria-expanded="false"
+              aria-controls="sidebar">
+        <div class="hamburger" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+
+      <div class="topbar-title" id="topbarPageTitle">Serviços</div>
+
       <div class="topbar-search">
         <span class="search-icon">🔍</span>
         <input type="text" placeholder="Buscar serviços..." id="topbarSearchInput" />
       </div>
       <div class="topbar-actions">
-        <button class="topbar-btn" data-tooltip="Notificações">🔔</button>
-        <div class="topbar-avatar" id="topbarAvatar">J</div>
+        <button class="topbar-btn" data-tooltip="Notificações" aria-label="Notificações">
+          🔔
+        </button>
+        <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
+
     </header>
 
     <main class="page-content">
@@ -143,9 +164,6 @@
 </div>
 
 <div class="notifications-wrapper" id="notificationsWrapper"></div>
-
-<script src="../js/db.js"></script>
-<script src="../js/ui.js"></script>
 <script>
 
   const serviceEmojis = ['✂️','💅','🧖','🧴','💇','🪒','🌿','💆','🧘','🌸','💎','🎨'];
@@ -277,5 +295,9 @@
     document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
   });
 </script>
+
+<script src="../js/db.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/mobile.js"></script>
 </body>
 </html>
