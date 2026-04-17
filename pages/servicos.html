@@ -166,62 +166,134 @@
 <div class="notifications-wrapper" id="notificationsWrapper"></div>
 <script>
 
-  const serviceEmojis = ['✂️','💅','🧖','🧴','💇','🪒','🌿','💆','🧘','🌸','💎','🎨'];
-  function pickEmoji(name) {
-    let hash = 0;
-    for (const c of (name || '')) hash += c.charCodeAt(0);
-    return serviceEmojis[hash % serviceEmojis.length];
+// ──────────────────────────────────────────
+// PAGINAÇÃO PARA SERVIÇOS (NOVO PADRÃO)
+// ──────────────────────────────────────────
+const serviceEmojis = ['✂️','💅','🧖','🧴','💇','🪒','🌿','💆','🧘','🌸','💎','🎨'];
+function pickEmoji(name) {
+  let hash = 0;
+  for (const c of (name || '')) hash += c.charCodeAt(0);
+  return serviceEmojis[hash % serviceEmojis.length];
+}
+
+let currentPageServicos = 1;
+let itemsPerPageServicos = 12; // Cards por página
+let filteredServicos = [];
+
+function renderServicosPaginated(filter = '') {
+  const grid = document.getElementById('servicosGrid');
+  const empty = document.getElementById('servicosEmpty');
+  let servicos = DB.getServicos();
+
+  if (filter) {
+    const q = filter.toLowerCase();
+    servicos = servicos.filter(s => (s.nome || '').toLowerCase().includes(q));
   }
 
-  function renderServicos(filter = '') {
-    const grid = document.getElementById('servicosGrid');
-    const empty = document.getElementById('servicosEmpty');
-    let servicos = DB.getServicos();
+  filteredServicos = servicos;
+  const totalPages = Math.ceil(filteredServicos.length / itemsPerPageServicos);
 
-    if (filter) {
-      const q = filter.toLowerCase();
-      servicos = servicos.filter(s => (s.nome || '').toLowerCase().includes(q));
-    }
+  if (currentPageServicos > totalPages && totalPages > 0) currentPageServicos = totalPages;
+  if (currentPageServicos < 1) currentPageServicos = 1;
 
-    document.getElementById('servicosCount').textContent =
-      `${servicos.length} serviço${servicos.length !== 1 ? 's' : ''} cadastrado${servicos.length !== 1 ? 's' : ''}`;
+  const start = (currentPageServicos - 1) * itemsPerPageServicos;
+  const end = start + itemsPerPageServicos;
+  const pageServicos = filteredServicos.slice(start, end);
 
-    grid.innerHTML = '';
+  document.getElementById('servicosCount').textContent =
+    `${filteredServicos.length} serviço${filteredServicos.length !== 1 ? 's' : ''} cadastrado${filteredServicos.length !== 1 ? 's' : ''}`;
 
-    if (servicos.length === 0) {
-      empty.classList.remove('hidden');
-      return;
-    }
-    empty.classList.add('hidden');
+  grid.innerHTML = '';
 
-    const config = DB.getConfig();
-    const showDuracao = config.modulos?.duracao !== false;
-
-    servicos.forEach(s => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.style.padding = '20px';
-      card.style.cursor = 'default';
-      card.innerHTML = `
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
-          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px">
-            ${pickEmoji(s.nome)}
-          </div>
-          <div class="table-actions">
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarServico('${s.id}')" data-tooltip="Editar">✏️</button>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirServico('${s.id}', '${(s.nome||'').replace(/'/g,"\\'")} ')" data-tooltip="Excluir">🗑️</button>
-          </div>
-        </div>
-        <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">${s.nome || '—'}</div>
-        ${s.descricao ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5">${s.descricao}</div>` : '<div style="margin-bottom:12px"></div>'}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border-soft)">
-          <div style="font-size:1.2rem;font-weight:800;color:var(--primary)">${Format.currency(s.preco)}</div>
-          ${showDuracao && s.duracao ? `<span class="badge badge-blue">⏱ ${Format.duration(s.duracao)}</span>` : ''}
-        </div>
-      `;
-      grid.appendChild(card);
-    });
+  if (filteredServicos.length === 0) {
+    empty.classList.remove('hidden');
+    document.getElementById('paginationServicos')?.remove();
+    return;
   }
+
+  empty.classList.add('hidden');
+
+  const config = DB.getConfig();
+  const showDuracao = config.modulos?.duracao !== false;
+
+  pageServicos.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.padding = '20px';
+    card.style.cursor = 'default';
+    card.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+        <div style="width:44px;height:44px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px">
+          ${pickEmoji(s.nome)}
+        </div>
+        <div class="table-actions">
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="editarServico('${s.id}')" data-tooltip="Editar">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="excluirServico('${s.id}', '${(s.nome || '').replace(/'/g, "\\'")}')" data-tooltip="Excluir">🗑️</button>
+        </div>
+      </div>
+      <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">${s.nome || '—'}</div>
+      ${s.descricao ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5">${s.descricao}</div>` : '<div style="margin-bottom:12px"></div>'}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border-soft)">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary)">${Format.currency(s.preco)}</div>
+        ${showDuracao && s.duracao ? `<span class="badge badge-blue">⏱ ${Format.duration(s.duracao)}</span>` : ''}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  renderPaginationServicos(totalPages);
+}
+
+function renderPaginationServicos(totalPages) {
+  let paginationDiv = document.getElementById('paginationServicos');
+  if (!paginationDiv) {
+    paginationDiv = document.createElement('div');
+    paginationDiv.id = 'paginationServicos';
+    paginationDiv.style.cssText = 'display:flex;justify-content:center;gap:8px;margin-top:20px;padding:12px;flex-wrap:wrap';
+    const container = document.querySelector('.page-content');
+    if (container) container.appendChild(paginationDiv);
+  }
+
+  if (totalPages <= 1) {
+    paginationDiv.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  html += `<button class="btn btn-secondary btn-sm" onclick="changePageServicos(${currentPageServicos - 1})" ${currentPageServicos === 1 ? 'disabled' : ''}>« Anterior</button>`;
+
+  for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+    html += `<button class="btn ${i === currentPageServicos ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="changePageServicos(${i})">${i}</button>`;
+  }
+
+  if (totalPages > 5) {
+    html += `<span style="padding:0 8px">...</span>`;
+    html += `<button class="btn btn-secondary btn-sm" onclick="changePageServicos(${totalPages})">${totalPages}</button>`;
+  }
+
+  html += `<button class="btn btn-secondary btn-sm" onclick="changePageServicos(${currentPageServicos + 1})" ${currentPageServicos === totalPages ? 'disabled' : ''}>Próximo »</button>`;
+
+  paginationDiv.innerHTML = html;
+}
+
+function changePageServicos(page) {
+  currentPageServicos = page;
+  const searchValue = document.getElementById('searchServicos')?.value || '';
+  renderServicosPaginated(searchValue);
+}
+
+// Sobrescrever o evento de busca
+const originalSearchServicos = () => {
+  currentPageServicos = 1;
+  renderServicosPaginated(document.getElementById('searchServicos')?.value || '');
+};
+
+// Substituir no DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  renderServicosPaginated();
+  document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
+  document.getElementById('searchServicos')?.addEventListener('input', originalSearchServicos);
+});
 
   function openServicoModal() {
     document.getElementById('servicoId').value = '';
@@ -273,27 +345,40 @@
     Notify.success('Serviço salvo!', `"${nome}" foi ${servico.id ? 'atualizado' : 'cadastrado'}.`);
   }
 
-  function excluirServico(id, nome) {
-    confirmDelete(`Excluir o serviço "${nome}"?`, () => {
-      DB.deleteServico(id);
-      renderServicos();
-      Notify.success('Serviço removido', 'O serviço foi excluído com sucesso.');
-    });
+  // CORRIGIDA: Exclusão com verificação de agendamentos futuros
+function excluirServico(id, nome) {
+  // Verifica se o serviço tem agendamentos futuros (não concluídos)
+  const agendamentos = DB.getAgendamentos();
+  const agendamentosFuturos = agendamentos.filter(ag => {
+    if (ag.servicoId !== id) return false;
+    if (ag.status === 'concluido') return false;
+    
+    // Verifica se a data é hoje ou no futuro
+    const hoje = new Date().toISOString().slice(0, 10);
+    return ag.data >= hoje;
+  });
+  
+  if (agendamentosFuturos.length > 0) {
+    Notify.error(
+      'Não é possível excluir', 
+      `Este serviço possui ${agendamentosFuturos.length} agendamento(s) futuro(s). Conclua ou cancele-os primeiro.`
+    );
+    return;
   }
-
-  document.getElementById('searchServicos').addEventListener('input', (e) => {
-    renderServicos(e.target.value);
-  });
-
-  document.getElementById('topbarSearchInput')?.addEventListener('input', (e) => {
-    document.getElementById('searchServicos').value = e.target.value;
-    renderServicos(e.target.value);
-  });
-
-  document.addEventListener('DOMContentLoaded', () => {
+  
+  confirmDelete(`Excluir o serviço "${nome}"? Esta ação não pode ser desfeita.`, () => {
+    DB.deleteServico(id);
     renderServicos();
-    document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
+    Notify.success('Serviço removido', 'O serviço foi excluído com sucesso.');
   });
+}
+document.getElementById('searchServicos').addEventListener('input', e => {
+  window.servicosCurrentPage = 1;
+  renderServicos(e.target.value);
+});
+
+window.servicosCurrentPage = 1;
+renderServicos();
 </script>
 
 <script src="../js/db.js"></script>

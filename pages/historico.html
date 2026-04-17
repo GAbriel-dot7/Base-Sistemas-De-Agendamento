@@ -156,6 +156,107 @@
 
 <div class="notifications-wrapper" id="notificationsWrapper"></div>
 <script>
+// ──────────────────────────────────────────
+// EXPORTAR PDF
+// ──────────────────────────────────────────
+function exportToPDF() {
+  const hist = getFilteredHistorico();
+  const config = DB.getConfig();
+  
+  if (hist.length === 0) {
+    Notify.warning('Nada para exportar', 'Não há registros no histórico no período selecionado.');
+    return;
+  }
+  
+  // Cria uma janela de impressão
+  const printWindow = window.open('', '_blank');
+  
+  const total = hist.reduce((acc, h) => acc + (parseFloat(h.valor) || 0), 0);
+  const ticketMedio = total / hist.length;
+  
+  printWindow.document.write(
+    '<!DOCTYPE html>' +
+    '<html>' +
+    '<head>' +
+    `<title>Relatório - ${config.nome || 'SGCM'}</title>` +
+    '<meta charset="UTF-8">' +
+    '<style>' +
+    '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+    'body { font-family: "Segoe UI", Arial, sans-serif; padding: 40px; color: #333; }' +
+    '.header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #2563EB; }' +
+    '.header h1 { font-size: 24px; margin-bottom: 5px; }' +
+    '.header p { color: #666; font-size: 12px; }' +
+    '.stats { display: flex; justify-content: space-around; margin-bottom: 30px; gap: 20px; }' +
+    '.stat-box { background: #f3f4f6; padding: 15px; border-radius: 10px; text-align: center; flex: 1; }' +
+    '.stat-box .value { font-size: 28px; font-weight: bold; color: #2563EB; }' +
+    '.stat-box .label { font-size: 12px; color: #666; margin-top: 5px; }' +
+    'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
+    'th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }' +
+    'th { background: #f3f4f6; font-weight: bold; }' +
+    '.footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 20px; }' +
+    '@media print { body { padding: 20px; } .no-print { display: none; } }' +
+    '</style>' +
+    '</head>' +
+    '<body>' +
+    `<div class="header">
+      <h1>📋 ${config.nome || 'SGCM'} - Relatório de Atendimentos</h1>
+      <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+      <p>Período: ${document.getElementById('filterDe')?.value || 'Todas'} até ${document.getElementById('filterAte')?.value || 'Todas'}</p>
+    </div>` +
+    '<div class="stats">' +
+      `<div class="stat-box"><div class="value">${Format.currency(total)}</div><div class="label">Receita Total</div></div>` +
+      `<div class="stat-box"><div class="value">${hist.length}</div><div class="label">Atendimentos</div></div>` +
+      `<div class="stat-box"><div class="value">${Format.currency(ticketMedio)}</div><div class="label">Ticket Médio</div></div>` +
+    '</div>' +
+    '<table>' +
+      '<thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Data</th><th>Hora</th></tr></thead>' +
+      '<tbody>' +
+        hist.map(h => {
+          const c = DB.getClienteById(h.clienteId);
+          const s = DB.getServicoPorId(h.servicoId);
+          return `<tr>` +
+            `<td>${c?.nome || 'Removido'}</td>` +
+            `<td>${s?.nome || 'Removido'}</td>` +
+            `<td>${Format.currency(h.valor)}</td>` +
+            `<td>${Format.date(h.data)}</td>` +
+            `<td>${h.hora || '—'}</td>` +
+          `</tr>`;
+        }).join('') +
+      '</tbody>' +
+    '</table>' +
+    '<div class="footer"><p>Relatório gerado pelo SGCM - Sistema de Gerenciamento Comercial</p></div>' +
+    '<div class="no-print" style="text-align:center;margin-top:20px">' +
+      '<button onclick="window.print()" style="padding:10px 20px;background:#2563EB;color:white;border:none;border-radius:5px;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
+    '</div>' +
+    '<script>// Auto-abrir diálogo de impressão (opcional)// setTimeout(() => window.print(), 500);<\/script>' +
+    '</body></html>'
+  );
+  
+  printWindow.document.close();
+  Notify.success('Relatório gerado', 'A janela de impressão foi aberta. Use "Salvar como PDF" para exportar.');
+}
+
+// Helper para pegar histórico filtrado (reutilizado do render)
+function getFilteredHistorico() {
+  let hist = DB.getHistorico();
+  const filterDe = document.getElementById('filterDe')?.value;
+  const filterAte = document.getElementById('filterAte')?.value;
+  const search = document.getElementById('searchHist')?.value || '';
+  
+  if (filterDe) hist = hist.filter(h => (h.data || '') >= filterDe);
+  if (filterAte) hist = hist.filter(h => (h.data || '') <= filterAte);
+  
+  if (search) {
+    const q = search.toLowerCase();
+    hist = hist.filter(h => {
+      const c = DB.getClienteById(h.clienteId);
+      const s = DB.getServicoPorId(h.servicoId);
+      return (c?.nome||'').toLowerCase().includes(q) || (s?.nome||'').toLowerCase().includes(q);
+    });
+  }
+  
+  return hist;
+}
 
   function renderHistorico(search = '') {
     const tbody = document.getElementById('histTableBody');
@@ -203,22 +304,55 @@
     hist.forEach(h => {
       const c = DB.getClienteById(h.clienteId);
       const s = DB.getServicoPorId(h.servicoId);
-      const color = avatarColor(c?.nome || '');
-
+      let color = avatarColor(c?.nome || '');
+      if (!color || typeof color !== 'string' || !color.match(/^#[0-9A-Fa-f]{3,6}$/)) color = '#cccccc';
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div class="client-cell">
-            <div class="avatar" style="background:${color};width:28px;height:28px;font-size:10px">${Format.initials(c?.nome||'?')}</div>
-            <span style="font-weight:600">${c?.nome || '<span style="color:var(--text-muted)">Removido</span>'}</span>
-          </div>
-        </td>
-        <td style="font-weight:500">${s?.nome || '<span style="color:var(--text-muted)">Removido</span>'}</td>
-        <td style="font-weight:700;color:var(--green)">${Format.currency(h.valor)}</td>
-        <td>${Format.date(h.data)}</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:var(--text-muted)">${h.hora || '—'}</td>
-        <td style="color:var(--text-muted);font-size:0.8rem">${Format.dateTime(h.registradoEm)}</td>
-      `;
+      // Monta o avatar via JS para evitar problemas de template literal no style
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'avatar';
+      avatarDiv.textContent = Format.initials(c?.nome||'?');
+      avatarDiv.style.backgroundColor = color;
+      avatarDiv.style.width = '28px';
+      avatarDiv.style.height = '28px';
+      avatarDiv.style.fontSize = '10px';
+      const clientCell = document.createElement('div');
+      clientCell.className = 'client-cell';
+      clientCell.appendChild(avatarDiv);
+      const nameSpan = document.createElement('span');
+      nameSpan.style.fontWeight = '600';
+      nameSpan.innerHTML = c?.nome ? c.nome : "<span style='color:var(--text-muted);'>Removido</span>";
+      clientCell.appendChild(nameSpan);
+      const tdClient = document.createElement('td');
+      tdClient.appendChild(clientCell);
+      // Monta as outras células via template string
+      tr.appendChild(tdClient);
+      // Monta as outras células manualmente para evitar problemas de template literal
+      const tdServico = document.createElement('td');
+      tdServico.style.fontWeight = '500';
+      tdServico.innerHTML = s?.nome ? s.nome : "<span style='color:var(--text-muted);'>Removido</span>";
+      tr.appendChild(tdServico);
+
+      const tdValor = document.createElement('td');
+      tdValor.style.fontWeight = '700';
+      tdValor.style.color = 'var(--green)';
+      tdValor.textContent = Format.currency(h.valor);
+      tr.appendChild(tdValor);
+
+      const tdData = document.createElement('td');
+      tdData.textContent = Format.date(h.data);
+      tr.appendChild(tdData);
+
+      const tdHora = document.createElement('td');
+      tdHora.style.fontFamily = "'JetBrains Mono',monospace";
+      tdHora.style.color = 'var(--text-muted)';
+      tdHora.textContent = h.hora || '—';
+      tr.appendChild(tdHora);
+
+      const tdRegistrado = document.createElement('td');
+      tdRegistrado.style.color = 'var(--text-muted)';
+      tdRegistrado.style.fontSize = '0.8rem';
+      tdRegistrado.textContent = Format.dateTime(h.registradoEm);
+      tr.appendChild(tdRegistrado);
       tbody.appendChild(tr);
     });
   }

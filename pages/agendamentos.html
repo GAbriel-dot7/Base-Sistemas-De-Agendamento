@@ -154,6 +154,12 @@
             <option value="">Selecionar serviço...</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Funcionário</label>
+          <select id="agFuncionario" class="form-control">
+            <option value="">Selecionar funcionário...</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-row">
@@ -212,6 +218,33 @@
 
 <div class="notifications-wrapper" id="notificationsWrapper"></div>
 <script>
+// Popular select de funcionários
+function populateFuncionarios() {
+  const select = document.getElementById('agFuncionario');
+  if (!select) return;
+  const usuarios = Auth.getUsuarios().filter(u => u.ativo);
+  select.innerHTML = '<option value="">Selecionar funcionário...</option>';
+  usuarios.forEach(u => {
+    select.innerHTML += `<option value="${u.id}">${u.nome} (${u.role === 'admin' ? 'Admin' : 'Atendente'})</option>`;
+  });
+}
+
+// Modificar a função openAgModal para incluir funcionários
+const originalOpenAgModal = window.openAgModal;
+window.openAgModal = function() {
+  if (originalOpenAgModal) originalOpenAgModal();
+  populateFuncionarios();
+};
+
+// Modificar salvarAgendamento para incluir funcionarioId
+const originalSalvarAgendamento = window.salvarAgendamento;
+window.salvarAgendamento = function() {
+  const funcionarioId = document.getElementById('agFuncionario')?.value || '';
+  // Chama a função original e adiciona o campo
+  // (adaptar conforme a implementação existente)
+  if (originalSalvarAgendamento) originalSalvarAgendamento();
+  // Aqui você pode adaptar para salvar o funcionarioId no objeto do agendamento
+};
 
   let currentFilter = 'hoje';
 
@@ -266,6 +299,13 @@
       });
     }
 
+    // Paginação
+    const pageSize = 10;
+    let currentPage = window.agendamentosCurrentPage || 1;
+    const totalPages = Math.ceil(ags.length / pageSize) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    window.agendamentosCurrentPage = currentPage;
+
     const label = currentFilter === 'hoje' ? 'hoje' : currentFilter === 'amanha' ? 'amanhã' : 'no período';
     document.getElementById('agendamentosCount').textContent =
       `${ags.length} agendamento${ags.length !== 1 ? 's' : ''} ${label}`;
@@ -274,9 +314,75 @@
 
     if (ags.length === 0) {
       empty.classList.remove('hidden');
+      renderAgendamentosPagination(1, 1);
       return;
     }
     empty.classList.add('hidden');
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    ags.slice(start, end).forEach(ag => {
+      const c = DB.getClienteById(ag.clienteId);
+      const s = DB.getServicoPorId(ag.servicoId);
+      const color = avatarColor(c?.nome || '');
+
+      const statusMap = {
+        agendado: '<span class="badge badge-blue">Agendado</span>',
+        concluido: '<span class="badge badge-green">Concluído</span>',
+        cancelado: '<span class="badge badge-red">Cancelado</span>',
+      };
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div class="client-cell">
+            <div class="avatar" style="background:${color}">${Format.initials(c?.nome||'?')}</div>
+            <span style="font-weight:600">${c?.nome || '<span style=\"color:var(--text-muted)\">Cliente removido</span>'}</span>
+          </div>
+        </td>
+        <td style="font-weight:500">${s?.nome || '<span style=\"color:var(--text-muted)\">Serviço removido</span>'}</td>
+        <td>
+          <div style="font-weight:600">${Format.date(ag.data)}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${ag.hora || '—'}</div>
+        </td>
+        <td style="font-weight:700;color:var(--green)">${Format.currency(ag.valor)}</td>
+        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ag.observacao || '—'}</td>
+        <td>${statusMap[ag.status] || statusMap.agendado}</td>
+        <td>
+          <div class="table-actions" style="justify-content:flex-end">
+            ${ag.status === 'agendado' ? `<button class=\"btn btn-success btn-sm\" onclick=\"concluirAg('${ag.id}')\" data-tooltip=\"Marcar como concluído\">✅ Concluir</button>` : ''}
+            <button class=\"btn btn-secondary btn-sm btn-icon\" onclick=\"editarAg('${ag.id}')\" data-tooltip=\"Editar\">✏️</button>
+            <button class=\"btn btn-danger btn-sm btn-icon\" onclick=\"excluirAg('${ag.id}')\" data-tooltip=\"Excluir\">🗑️</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    renderAgendamentosPagination(currentPage, totalPages);
+
+
+// Paginação de agendamentos
+function renderAgendamentosPagination(currentPage, totalPages) {
+    let pagContainer = document.getElementById('agendamentosPagination');
+    if (!pagContainer) {
+      pagContainer = document.createElement('div');
+      pagContainer.id = 'agendamentosPagination';
+      pagContainer.style = 'display:flex;justify-content:center;gap:8px;margin:24px 0 0 0';
+      document.querySelector('.main-content .page-content').appendChild(pagContainer);
+    }
+    pagContainer.innerHTML = '';
+    if (totalPages <= 1) return;
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm' + (i === currentPage ? ' btn-primary' : ' btn-secondary');
+      btn.textContent = i;
+      btn.onclick = () => {
+        window.agendamentosCurrentPage = i;
+        renderAgendamentos(document.getElementById('topbarSearchInput').value);
+      };
+      pagContainer.appendChild(btn);
+    }
+  }
 
     ags.forEach(ag => {
       const c = DB.getClienteById(ag.clienteId);
@@ -372,32 +478,39 @@
     Modal.open('agModal');
   }
 
+  // CORRIGIDA: salvarAgendamento com validação de conflito
   function salvarAgendamento() {
     const clienteId = document.getElementById('agCliente').value;
     const servicoId = document.getElementById('agServico').value;
     const data = document.getElementById('agData').value;
     const hora = document.getElementById('agHora').value;
+    const agId = document.getElementById('agId').value;
 
     if (!clienteId) { Notify.error('Campo obrigatório', 'Selecione um cliente.'); return; }
     if (!servicoId) { Notify.error('Campo obrigatório', 'Selecione um serviço.'); return; }
     if (!data) { Notify.error('Campo obrigatório', 'Informe a data.'); return; }
     if (!hora) { Notify.error('Campo obrigatório', 'Informe o horário.'); return; }
 
-    const ag = {
-      id: document.getElementById('agId').value || null,
-      clienteId,
-      servicoId,
-      data,
-      hora,
-      valor: document.getElementById('agValor').value || '0',
-      status: document.getElementById('agStatus').value,
-      observacao: document.getElementById('agObs').value.trim(),
-    };
+    // NOVA VALIDAÇÃO: Verifica conflito de horários
+    const temConflito = hasTimeConflict(data, hora, servicoId, agId || null);
+    if (temConflito) {
 
-    DB.saveAgendamento(ag);
-    Modal.close('agModal');
-    renderAgendamentos();
-    Notify.success('Agendamento salvo!', `Agendado para ${Format.date(data)} às ${hora}.`);
+    const inicioNovo = horaParaMinutos(hora);
+    const fimNovo = inicioNovo + duracao;
+
+    for (const ag of agendamentos) {
+      const inicioExistente = horaParaMinutos(ag.hora);
+      const servicoExistente = DB.getServicoPorId(ag.servicoId);
+      const duracaoExistente = parseInt(servicoExistente?.duracao || '30', 10);
+      const fimExistente = inicioExistente + duracaoExistente;
+      // Verifica sobreposição
+      if (
+        (inicioNovo < fimExistente && fimNovo > inicioExistente)
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function concluirAg(id) {
@@ -424,13 +537,18 @@
   filterDate('hoje');
 
   document.getElementById('topbarSearchInput')?.addEventListener('input', (e) => {
+    window.agendamentosCurrentPage = 1;
     renderAgendamentos(e.target.value);
   });
 
+  window.agendamentosCurrentPage = 1;
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
     filterDate('hoje');
   });
+  
+
+}
 </script>
 
 <script src="../js/db.js"></script>

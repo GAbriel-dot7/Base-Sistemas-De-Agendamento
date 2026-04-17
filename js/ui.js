@@ -34,14 +34,80 @@ function applyConfig() {
   document.title = (config.nome || 'SGCM') + ' — ' + pageTitle.split('—')[1]?.trim() || 'Sistema';
 }
 
+// CORRIGIDA: hexToRgbaLight com fallback seguro
 function hexToRgbaLight(hex) {
-  if (!hex) return '#DBEAFE';
+  // Fallback para valores inválidos
+  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) {
+    return '#DBEAFE';
+  }
+  
   try {
-    const r = parseInt(hex.slice(1,3),16);
-    const g = parseInt(hex.slice(3,5),16);
-    const b = parseInt(hex.slice(5,7),16);
+    // Suporta tanto #RGB quanto #RRGGBB
+    let r, g, b;
+    if (hex.length === 4) {
+      r = parseInt(hex[1] + hex[1], 16);
+      g = parseInt(hex[2] + hex[2], 16);
+      b = parseInt(hex[3] + hex[3], 16);
+    } else if (hex.length === 7) {
+      r = parseInt(hex.slice(1, 3), 16);
+      g = parseInt(hex.slice(3, 5), 16);
+      b = parseInt(hex.slice(5, 7), 16);
+    } else {
+      return '#DBEAFE';
+    }
+    
+    // Verifica se os valores são válidos
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      return '#DBEAFE';
+    }
+    
     return `rgba(${r},${g},${b},0.12)`;
-  } catch { return '#DBEAFE'; }
+  } catch (e) {
+    console.warn('hexToRgbaLight error:', e);
+    return '#DBEAFE';
+  }
+}
+
+// ──────────────────────────────────────────
+// VALIDAÇÃO DE CONFLITO DE HORÁRIOS (NOVA FUNÇÃO)
+// ──────────────────────────────────────────
+function hasTimeConflict(data, hora, servicoId, excludeId = null) {
+  const servico = DB.getServicoPorId(servicoId);
+  if (!servico) return false;
+  
+  const duracao = parseInt(servico.duracao) || 30;
+  
+  // Converte hora inicial para minutos
+  const [horaInicio, minInicio] = hora.split(':').map(Number);
+  const inicioMinutos = horaInicio * 60 + minInicio;
+  const fimMinutos = inicioMinutos + duracao;
+  
+  const agendamentos = DB.getAgendamentos();
+  
+  return agendamentos.some(ag => {
+    // Ignora o próprio agendamento se estiver editando
+    if (excludeId && ag.id === excludeId) return false;
+    
+    // Só verifica mesma data
+    if (ag.data !== data) return false;
+    
+    // Só verifica agendamentos ativos (não cancelados)
+    if (ag.status === 'cancelado') return false;
+    
+    const [hAg, mAg] = ag.hora.split(':').map(Number);
+    const agInicio = hAg * 60 + mAg;
+    
+    // Pega duração do serviço do outro agendamento
+    const outroServico = DB.getServicoPorId(ag.servicoId);
+    const outroDuracao = parseInt(outroServico?.duracao) || 30;
+    const agFim = agInicio + outroDuracao;
+    
+    // Verifica sobreposição: 
+    // [inicio, fim] vs [agInicio, agFim]
+    const temConflito = (inicioMinutos < agFim && fimMinutos > agInicio);
+    
+    return temConflito;
+  });
 }
 
 // ──────────────────────────────────────────
@@ -288,6 +354,109 @@ function checkUpcomingAppointments() {
   });
 }
 
+
+// ──────────────────────────────────────────
+// MODO ESCURO (DARK MODE)
+// ──────────────────────────────────────────
+const DarkMode = {
+  init() {
+    const saved = localStorage.getItem('sgcm_darkmode');
+    if (saved === 'true') {
+      document.body.classList.add('dark-mode');
+      this.updateToggleIcon(true);
+    }
+    // Adiciona botão na topbar se existir
+    this.addToggleButton();
+  },
+  addToggleButton() {
+    // Procura o local onde adicionar o botão (topbar-actions)
+    const topbarActions = document.querySelector('.topbar-actions');
+    if (!topbarActions) return;
+    // Verifica se já existe
+    if (document.getElementById('darkModeToggle')) return;
+    const btn = document.createElement('button');
+    btn.id = 'darkModeToggle';
+    btn.className = 'dark-mode-toggle';
+    btn.setAttribute('data-tooltip', 'Alternar modo escuro');
+    btn.setAttribute('aria-label', 'Alternar modo escuro');
+    const isDark = document.body.classList.contains('dark-mode');
+    btn.innerHTML = isDark ? '☀️' : '🌙';
+    btn.addEventListener('click', () => this.toggle());
+    // Insere antes do avatar
+    const avatar = topbarActions.querySelector('.topbar-avatar');
+    if (avatar) {
+      topbarActions.insertBefore(btn, avatar);
+    } else {
+      topbarActions.appendChild(btn);
+    }
+  },
+  updateToggleIcon(isDark) {
+    const btn = document.getElementById('darkModeToggle');
+    if (btn) {
+      btn.innerHTML = isDark ? '☀️' : '🌙';
+    }
+  },
+  toggle() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('sgcm_darkmode', isDark);
+    this.updateToggleIcon(isDark);
+    // Dispara evento global para sincronizar outros botões
+    document.dispatchEvent(new Event('darkmodechange'));
+    Notify.info('Tema alterado', isDark ? 'Modo escuro ativado' : 'Modo claro ativado');
+  }
+};
+
+// ──────────────────────────────────────────
+// BACKUP AUTOMÁTICO (LEMBRETE SEMANAL)
+// ──────────────────────────────────────────
+const BackupReminder = {
+  init() {
+    const lastBackup = localStorage.getItem('sgcm_last_backup_reminder');
+    const now = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    if (!lastBackup || (now - parseInt(lastBackup)) > oneWeek) {
+      setTimeout(() => {
+        Notify.warning(
+          '💾 Backup recomendado',
+          'Já faz uma semana. Exporte seus dados em Configurações > Dados do Sistema.',
+          10000
+        );
+        localStorage.setItem('sgcm_last_backup_reminder', now);
+      }, 3000);
+    }
+  }
+};
+
+// ──────────────────────────────────────────
+// MÁSCARA DE TELEFONE
+// ──────────────────────────────────────────
+function setupPhoneMask(inputElement) {
+  if (!inputElement) return;
+  inputElement.addEventListener('input', (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 10) {
+      // (XX) XXXX-XXXX
+      value = value.replace(/(\d{2})(\d{0,4})(\d{0,4})/, (match, ddd, first, second) => {
+        let result = '';
+        if (ddd) result = `(${ddd}`;
+        if (first) result += `) ${first}`;
+        if (second) result += `-${second}`;
+        return result;
+      });
+    } else {
+      // (XX) XXXXX-XXXX
+      value = value.replace(/(\d{2})(\d{0,5})(\d{0,4})/, (match, ddd, first, second) => {
+        let result = '';
+        if (ddd) result = `(${ddd}`;
+        if (first) result += `) ${first}`;
+        if (second) result += `-${second}`;
+        return result;
+      });
+    }
+    e.target.value = value;
+  });
+}
+
 // ──────────────────────────────────────────
 // INICIALIZAÇÃO GERAL
 // ──────────────────────────────────────────
@@ -295,6 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
   Notify.init();
   applyConfig();
   Pages.init();
+  DarkMode.init();        // NOVO
+  BackupReminder.init();  // NOVO
 
   // Verificar agendamentos próximos a cada 5 minutos
   checkUpcomingAppointments();
@@ -307,4 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     badge.textContent = count;
     badge.style.display = count > 0 ? '' : 'none';
   }
+  
+  // Aplicar máscara de telefone em todos os campos de telefone existentes
+  document.querySelectorAll('input[type="tel"], input[id$="Telefone"]').forEach(setupPhoneMask);
 });

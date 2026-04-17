@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — SGCM</title>
   <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -129,6 +130,27 @@
           <div class="stat-card-value" id="statReceita">R$ 0</div>
           <div class="stat-card-label">Receita do Mês</div>
           <div class="stat-card-change change-up">↑ Este mês</div>
+        </div>
+      </div>
+
+      <!-- Gráficos -->
+      <div class="dashboard-grid">
+        <div class="card col-2">
+          <div class="card-header">
+            <span class="card-title">📈 Receita Mensal</span>
+          </div>
+          <div class="card-body">
+            <canvas id="revenueChart" height="200" style="max-height: 250px"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🏆 Serviços Mais Vendidos</span>
+          </div>
+          <div class="card-body">
+            <canvas id="servicesChart" height="200" style="max-height: 250px"></canvas>
+          </div>
         </div>
       </div>
 
@@ -332,6 +354,10 @@
   // Render ao carregar
   document.addEventListener('DOMContentLoaded', () => {
     renderDashboard();
+    // Carregar gráficos
+    if (typeof initCharts === 'function') {
+      setTimeout(initCharts, 500);
+    }
   });
 </script>
 

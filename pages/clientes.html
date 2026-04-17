@@ -82,9 +82,12 @@
     <main class="page-content">
 
       <div class="page-header">
-        <div class="page-header-left">
+        <div class="page-header-left" style="display:flex;align-items:center;gap:16px;width:100%">
           <h1>👥 Clientes</h1>
           <p id="clientesCount">Carregando...</p>
+          <button class="btn btn-secondary" onclick="exportClientesToPDF()" style="margin-left:auto">
+            📄 Exportar PDF
+          </button>
         </div>
         <button class="btn btn-primary" onclick="openClienteModal()">
           ➕ Adicionar Cliente
@@ -198,15 +201,187 @@
 
 <div class="notifications-wrapper" id="notificationsWrapper"></div>
 <script>
-  // ────────────────────────────────────
-  // CLIENTES — Lógica
-  // ────────────────────────────────────
+  // ──────────────────────────────────────────
+  // EXPORTAR PDF
+  // ──────────────────────────────────────────
+// ──────────────────────────────────────────
+// EXPORTAR PDF DE CLIENTES
+// ──────────────────────────────────────────
+function exportClientesToPDF() {
+  const clientes = typeof filteredClientes !== 'undefined' && filteredClientes.length > 0 ? filteredClientes : DB.getClientes();
+  const config = DB.getConfig();
+  if (clientes.length === 0) {
+    Notify.warning('Nada para exportar', 'Não há clientes cadastrados.');
+    return;
+  }
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(
+    '<!DOCTYPE html>' +
+    '<html>' +
+    '<head>' +
+    '<title>Clientes - ' + (config.nome || 'SGCM') + '</title>' +
+    '<meta charset="UTF-8">' +
+    '<style>' +
+    '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+    'body { font-family: "Segoe UI", Arial, sans-serif; padding: 40px; color: #333; }' +
+    '.header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #2563EB; }' +
+    '.header h1 { font-size: 24px; margin-bottom: 5px; }' +
+    '.header p { color: #666; font-size: 12px; }' +
+    '.stats { background: #f3f4f6; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; }' +
+    '.stats .value { font-size: 28px; font-weight: bold; color: #2563EB; }' +
+    'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
+    'th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }' +
+    'th { background: #f3f4f6; font-weight: bold; }' +
+    '.footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 20px; }' +
+    '@media print { body { padding: 20px; } .no-print { display: none; } }' +
+    '</style>' +
+    '</head>' +
+    '<body>' +
+    '<div class="header">' +
+      '<h1>👥 ' + (config.nome || 'SGCM') + ' - Lista de Clientes</h1>' +
+      '<p>Gerado em: ' + new Date().toLocaleString('pt-BR') + '</p>' +
+    '</div>' +
+    '<div class="stats">' +
+      '<div class="value">' + clientes.length + '</div>' +
+      '<div>Clientes Cadastrados</div>' +
+    '</div>' +
+    '<table>' +
+      '<thead>' +
+        '<tr><th>Nome</th><th>Telefone</th><th>Email</th><th>Observações</th><th>Cadastro</th></tr>' +
+      '</thead>' +
+      '<tbody>' +
+        clientes.map(c =>
+          '<tr>' +
+            '<td>' + (c.nome || '—') + '</td>' +
+            '<td>' + (Format.phone ? Format.phone(c.telefone) : (c.telefone || '—')) + '</td>' +
+            '<td>' + (c.email || '—') + '</td>' +
+            '<td>' + (c.obs || '—') + '</td>' +
+            '<td>' + (Format.date ? Format.date(c.createdAt?.slice(0,10)) : (c.createdAt?.slice(0,10) || '—')) + '</td>' +
+          '</tr>'
+        ).join('') +
+      '</tbody>' +
+    '</table>' +
+    '<div class="footer">' +
+      '<p>Relatório gerado pelo SGCM - Sistema de Gerenciamento Comercial</p>' +
+    '</div>' +
+    '<div class="no-print" style="text-align:center;margin-top:20px">' +
+      '<button onclick="window.print()" style="padding:10px 20px;background:#2563EB;color:white;border:none;border-radius:5px;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
+    '</div>' +
+    '</body></html>'
+  );
+  printWindow.document.close();
+  Notify.success('Relatório gerado', 'A janela de impressão foi aberta. Use "Salvar como PDF" para exportar.');
+}
+    const hist = getFilteredHistorico();
+    const config = DB.getConfig();
+  
+    if (hist.length === 0) {
+      Notify.warning('Nada para exportar', 'Não há registros no histórico no período selecionado.');
+      return;
+    }
+  
+    // Cria uma janela de impressão
+    const printWindow = window.open('', '_blank');
+  
+    const total = hist.reduce((acc, h) => acc + (parseFloat(h.valor) || 0), 0);
+    const ticketMedio = total / hist.length;
+  
+    printWindow.document.write(
+      '<!DOCTYPE html>' +
+      '<html>' +
+      '<head>' +
+      '<title>Relatório - ' + (config.nome || 'SGCM') + '</title>' +
+      '<meta charset="UTF-8">' +
+      '<style>' +
+      '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+      'body { font-family: "Segoe UI", Arial, sans-serif; padding: 40px; color: #333; }' +
+      '.header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #2563EB; }' +
+      '.header h1 { font-size: 24px; margin-bottom: 5px; }' +
+      '.header p { color: #666; font-size: 12px; }' +
+      '.stats { display: flex; justify-content: space-around; margin-bottom: 30px; gap: 20px; }' +
+      '.stat-box { background: #f3f4f6; padding: 15px; border-radius: 10px; text-align: center; flex: 1; }' +
+      '.stat-box .value { font-size: 28px; font-weight: bold; color: #2563EB; }' +
+      '.stat-box .label { font-size: 12px; color: #666; margin-top: 5px; }' +
+      'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
+      'th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }' +
+      'th { background: #f3f4f6; font-weight: bold; }' +
+      '.footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 20px; }' +
+      '@media print { body { padding: 20px; } .no-print { display: none; } }' +
+      '</style>' +
+      '</head>' +
+      '<body>' +
+      '<div class="header">' +
+        '<h1>📋 ' + (config.nome || 'SGCM') + ' - Relatório de Atendimentos</h1>' +
+        '<p>Gerado em: ' + new Date().toLocaleString('pt-BR') + '</p>' +
+        '<p>Período: ' + (document.getElementById('filterDe')?.value || 'Todas') + ' até ' + (document.getElementById('filterAte')?.value || 'Todas') + '</p>' +
+      '</div>' +
+      '<div class="stats">' +
+        '<div class="stat-box"><div class="value">' + Format.currency(total) + '</div><div class="label">Receita Total</div></div>' +
+        '<div class="stat-box"><div class="value">' + hist.length + '</div><div class="label">Atendimentos</div></div>' +
+        '<div class="stat-box"><div class="value">' + Format.currency(ticketMedio) + '</div><div class="label">Ticket Médio</div></div>' +
+      '</div>' +
+      '<table>' +
+        '<thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Data</th><th>Hora</th></tr></thead>' +
+        '<tbody>' +
+          hist.map(h => {
+            const c = DB.getClienteById(h.clienteId);
+            const s = DB.getServicoPorId(h.servicoId);
+            return '<tr>' +
+              '<td>' + (c?.nome || 'Removido') + '</td>' +
+              '<td>' + (s?.nome || 'Removido') + '</td>' +
+              '<td>' + Format.currency(h.valor) + '</td>' +
+              '<td>' + Format.date(h.data) + '</td>' +
+              '<td>' + (h.hora || '—') + '</td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody>' +
+      '</table>' +
+      '<div class="footer"><p>Relatório gerado pelo SGCM - Sistema de Gerenciamento Comercial</p></div>' +
+      '<div class="no-print" style="text-align:center;margin-top:20px">' +
+        '<button onclick="window.print()" style="padding:10px 20px;background:#2563EB;color:white;border:none;border-radius:5px;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
+      '</div>' +
+      '<script>// Auto-abrir diálogo de impressão (opcional)// setTimeout(() => window.print(), 500);<\/script>' +
+      '</body></html>'
+    );
+  
+    printWindow.document.close();
+    Notify.success('Relatório gerado', 'A janela de impressão foi aberta. Use "Salvar como PDF" para exportar.');
+  // ...existing code...
 
-  function renderClientes(filter = '') {
+  // Helper para pegar histórico filtrado (reutilizado do render)
+  function getFilteredHistorico() {
+    let hist = DB.getHistorico();
+    const filterDe = document.getElementById('filterDe')?.value;
+    const filterAte = document.getElementById('filterAte')?.value;
+    const search = document.getElementById('searchHist')?.value || '';
+  
+    if (filterDe) hist = hist.filter(h => (h.data || '') >= filterDe);
+    if (filterAte) hist = hist.filter(h => (h.data || '') <= filterAte);
+  
+    if (search) {
+      const q = search.toLowerCase();
+      hist = hist.filter(h => {
+        const c = DB.getClienteById(h.clienteId);
+        const s = DB.getServicoPorId(h.servicoId);
+        return (c?.nome||'').toLowerCase().includes(q) || (s?.nome||'').toLowerCase().includes(q);
+      });
+    }
+  
+    return hist;
+  }
+  // ──────────────────────────────────────────
+  // PAGINAÇÃO
+  // ──────────────────────────────────────────
+  let currentPage = 1;
+  let itemsPerPage = 10;
+  let filteredClientes = [];
+
+  function renderClientesPaginated() {
     const tbody = document.getElementById('clientesTableBody');
     const emptyState = document.getElementById('clientesEmpty');
     let clientes = DB.getClientes();
-
+    const filter = document.getElementById('searchClientes')?.value || '';
+  
     if (filter) {
       const q = filter.toLowerCase();
       clientes = clientes.filter(c =>
@@ -215,46 +390,218 @@
         (c.telefone || '').includes(q)
       );
     }
-
-    document.getElementById('clientesCount').textContent =
-      `${clientes.length} cliente${clientes.length !== 1 ? 's' : ''} cadastrado${clientes.length !== 1 ? 's' : ''}`;
-
+  
+    filteredClientes = clientes;
+    const totalPages = Math.ceil(filteredClientes.length / itemsPerPage);
+  
+    // Ajusta página atual se necessário
+    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+  
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageClientes = filteredClientes.slice(start, end);
+  
+    document.getElementById('clientesCount').textContent = 
+      `${filteredClientes.length} cliente${filteredClientes.length !== 1 ? 's' : ''} cadastrado${filteredClientes.length !== 1 ? 's' : ''}`;
+  
     tbody.innerHTML = '';
-
-    if (clientes.length === 0) {
+  
+    if (filteredClientes.length === 0) {
       emptyState.classList.remove('hidden');
+      document.getElementById('paginationControls')?.remove();
       return;
     }
-
+  
     emptyState.classList.add('hidden');
-
-    clientes.forEach(c => {
+  
+    pageClientes.forEach(c => {
       const color = avatarColor(c.nome);
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div class="client-cell">
-            <div class="avatar" style="background:${color}">${Format.initials(c.nome)}</div>
-            <div>
-              <div style="font-weight:600">${c.nome || '—'}</div>
-            </div>
-          </div>
-        </td>
-        <td class="text-mono">${Format.phone(c.telefone)}</td>
-        <td style="color:var(--text-secondary)">${c.email || '—'}</td>
-        <td style="color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.obs || ''}">${c.obs || '—'}</td>
-        <td style="color:var(--text-muted)">${Format.date(c.createdAt?.slice(0,10))}</td>
-        <td>
-          <div class="table-actions" style="justify-content:flex-end">
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="verHistorico('${c.id}')" data-tooltip="Ver histórico">📋</button>
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarCliente('${c.id}')" data-tooltip="Editar">✏️</button>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirCliente('${c.id}', '${(c.nome || '').replace(/'/g,"\\'")} ')" data-tooltip="Excluir">🗑️</button>
-          </div>
-        </td>
-      `;
+      // Avatar e nome
+      const tdClient = document.createElement('td');
+      const clientCell = document.createElement('div');
+      clientCell.className = 'client-cell';
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'avatar';
+      avatarDiv.textContent = Format.initials(c.nome);
+      avatarDiv.style.backgroundColor = color;
+      clientCell.appendChild(avatarDiv);
+      const nameDiv = document.createElement('div');
+      const nameSpan = document.createElement('div');
+      nameSpan.style.fontWeight = '600';
+      nameSpan.textContent = c.nome || '—';
+      nameDiv.appendChild(nameSpan);
+      clientCell.appendChild(nameDiv);
+      tdClient.appendChild(clientCell);
+      tr.appendChild(tdClient);
+
+      // Telefone
+      const tdPhone = document.createElement('td');
+      tdPhone.className = 'text-mono';
+      tdPhone.textContent = Format.phone(c.telefone);
+      tr.appendChild(tdPhone);
+
+      // Email
+      const tdEmail = document.createElement('td');
+      tdEmail.style.color = 'var(--text-secondary)';
+      tdEmail.textContent = c.email || '—';
+      tr.appendChild(tdEmail);
+
+      // Observação
+      const tdObs = document.createElement('td');
+      tdObs.style.color = 'var(--text-muted)';
+      tdObs.style.maxWidth = '180px';
+      tdObs.style.overflow = 'hidden';
+      tdObs.style.textOverflow = 'ellipsis';
+      tdObs.style.whiteSpace = 'nowrap';
+      tdObs.title = c.obs || '';
+      tdObs.textContent = c.obs || '—';
+      tr.appendChild(tdObs);
+
+      // Data de cadastro
+      const tdCreated = document.createElement('td');
+      tdCreated.style.color = 'var(--text-muted)';
+      tdCreated.textContent = Format.date(c.createdAt?.slice(0,10));
+      tr.appendChild(tdCreated);
+
+      // Ações
+      const tdActions = document.createElement('td');
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'table-actions';
+      actionsDiv.style.justifyContent = 'flex-end';
+      // Botão histórico
+      const btnHist = document.createElement('button');
+      btnHist.className = 'btn btn-secondary btn-sm btn-icon';
+      btnHist.setAttribute('onclick', `verHistorico('${c.id}')`);
+      btnHist.setAttribute('data-tooltip', 'Ver histórico');
+      btnHist.textContent = '📋';
+      actionsDiv.appendChild(btnHist);
+      // Botão WhatsApp
+      const btnWhats = document.createElement('button');
+      btnWhats.className = 'btn btn-success btn-sm btn-icon';
+      btnWhats.setAttribute('onclick', `whatsappCliente('${c.telefone}', '${c.nome}')`);
+      btnWhats.setAttribute('data-tooltip', 'WhatsApp');
+      btnWhats.textContent = '💬';
+      actionsDiv.appendChild(btnWhats);
+      // WhatsApp integrado
+      function whatsappCliente(telefone, nome) {
+        if (!telefone) {
+          Notify.warning('Telefone não cadastrado', 'Adicione um telefone para este cliente.');
+          return;
+        }
+        // Limpa telefone
+        let numero = telefone.replace(/\D/g, '');
+        if (numero.length === 10) numero = '55' + numero;
+        if (numero.length === 11) numero = '55' + numero;
+        const mensagem = encodeURIComponent(`Olá ${nome}! Tudo bem? Estou entrando em contato do sistema SGCM.`);
+        window.open(`https://wa.me/${numero}?text=${mensagem}`, '_blank');
+      }
+      // Botão editar
+      const btnEdit = document.createElement('button');
+      btnEdit.className = 'btn btn-secondary btn-sm btn-icon';
+      btnEdit.setAttribute('onclick', `editarCliente('${c.id}')`);
+      btnEdit.setAttribute('data-tooltip', 'Editar');
+      btnEdit.textContent = '✏️';
+      actionsDiv.appendChild(btnEdit);
+      // Botão excluir
+      const btnDel = document.createElement('button');
+      btnDel.className = 'btn btn-danger btn-sm btn-icon';
+      btnDel.setAttribute('onclick', `excluirCliente('${c.id}', '${(c.nome || '').replace(/'/g, "\\'")}' )`);
+      btnDel.setAttribute('data-tooltip', 'Excluir');
+      btnDel.textContent = '🗑️';
+      actionsDiv.appendChild(btnDel);
+      tdActions.appendChild(actionsDiv);
+      tr.appendChild(tdActions);
       tbody.appendChild(tr);
     });
+  
+    renderPaginationControls(totalPages);
   }
+
+  function renderPaginationControls(totalPages) {
+    let paginationDiv = document.getElementById('paginationControls');
+  
+    if (!paginationDiv) {
+      paginationDiv = document.createElement('div');
+      paginationDiv.id = 'paginationControls';
+      paginationDiv.style.cssText = 'display:flex;justify-content:center;gap:8px;margin-top:20px;padding:12px;flex-wrap:wrap';
+      const tableCard = document.querySelector('.card');
+      if (tableCard) tableCard.appendChild(paginationDiv);
+    }
+  
+    if (totalPages <= 1) {
+      paginationDiv.innerHTML = '';
+      return;
+    }
+  
+    let html = '';
+  
+    // Botão Anterior
+    html += `<button class="btn btn-secondary btn-sm" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>« Anterior</button>`;
+  
+    // Números das páginas
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+  
+    if (startPage > 1) {
+      html += `<button class="btn btn-secondary btn-sm" onclick="changePage(1)">1</button>`;
+      if (startPage > 2) html += `<span style="padding:0 8px">...</span>`;
+    }
+  
+    for (let i = startPage; i <= endPage; i++) {
+      html += `<button class="btn ${i === currentPage ? 'btn-primary' : 'btn-secondary'} btn-sm" onclick="changePage(${i})">${i}</button>`;
+    }
+  
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) html += '<span style="padding:0 8px">...</span>';
+      html += '<button class="btn btn-secondary btn-sm" onclick="changePage(' + totalPages + ')">' + totalPages + '</button>';
+    }
+  
+    // Botão Próximo
+    html += '<button class="btn btn-secondary btn-sm" onclick="changePage(' + (currentPage + 1) + ')"' + (currentPage === totalPages ? ' disabled' : '') + '>Próximo »</button>';
+  
+    paginationDiv.innerHTML = html;
+  }
+
+  function changePage(page) {
+    currentPage = page;
+    renderClientesPaginated();
+  }
+
+  // Sobrescrever a função de busca para usar paginação
+  const originalSearchHandler = () => {
+    currentPage = 1;
+    renderClientesPaginated();
+  };
+
+  // Atualizar eventos
+  document.getElementById('searchClientes')?.addEventListener('input', () => {
+    currentPage = 1;
+    renderClientesPaginated();
+  });
+
+  // Substituir a chamada inicial
+  document.addEventListener('DOMContentLoaded', () => {
+    renderClientesPaginated();
+    document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
+  
+    // Aplicar máscara de telefone
+    const telefoneInput = document.getElementById('clienteTelefone');
+    if (telefoneInput && typeof setupPhoneMask === 'function') {
+      setupPhoneMask(telefoneInput);
+    }
+  });
+  // ────────────────────────────────────
+
+  // CLIENTES — Lógica
+  // ────────────────────────────────────
+  // Função renderClientes substituída por paginação
 
   function openClienteModal(id = null) {
     document.getElementById('clienteId').value = '';
@@ -325,33 +672,54 @@
       body.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Nenhum atendimento registrado</h3><p>Os atendimentos aparecerão aqui após serem concluídos.</p></div>`;
     } else {
       const total = hist.reduce((acc, h) => acc + (parseFloat(h.valor) || 0), 0);
-      body.innerHTML = `
-        <div style="padding:16px 20px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
-          <div class="avatar" style="background:${color};width:44px;height:44px;font-size:16px">${Format.initials(c.nome)}</div>
-          <div>
-            <div style="font-weight:700;font-size:1rem">${c.nome}</div>
-            <div style="font-size:0.8rem;color:var(--text-muted)">${hist.length} atendimento${hist.length !== 1 ? 's' : ''} · Total: ${Format.currency(total)}</div>
-          </div>
-        </div>
-        <table style="width:100%">
-          <thead><tr>
-            <th>Serviço</th>
-            <th>Data</th>
-            <th>Valor</th>
-          </tr></thead>
-          <tbody>
-            ${hist.map(h => {
-              const s = DB.getServicoPorId(h.servicoId);
-              return `<tr>
-                <td style="font-weight:500">${s?.nome || '—'}</td>
-                <td style="color:var(--text-muted)">${Format.date(h.data)}</td>
-                <td style="font-weight:600;color:var(--green)">${Format.currency(h.valor)}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
-    }
+      // Monta o header do modal manualmente
+      const headerDiv = document.createElement('div');
+      headerDiv.style.padding = '16px 20px';
+      headerDiv.style.background = 'var(--bg)';
+      headerDiv.style.borderBottom = '1px solid var(--border)';
+      headerDiv.style.display = 'flex';
+      headerDiv.style.alignItems = 'center';
+      headerDiv.style.gap = '14px';
+      // Avatar
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'avatar';
+      avatarDiv.textContent = Format.initials(c.nome);
+      avatarDiv.style.backgroundColor = color;
+      avatarDiv.style.width = '44px';
+      avatarDiv.style.height = '44px';
+      avatarDiv.style.fontSize = '16px';
+      headerDiv.appendChild(avatarDiv);
+      // Nome e resumo
+      const infoDiv = document.createElement('div');
+      const nameDiv = document.createElement('div');
+      nameDiv.style.fontWeight = '700';
+      nameDiv.style.fontSize = '1rem';
+      nameDiv.textContent = c.nome;
+      infoDiv.appendChild(nameDiv);
+      const resumoDiv = document.createElement('div');
+      resumoDiv.style.fontSize = '0.8rem';
+      resumoDiv.style.color = 'var(--text-muted)';
+      resumoDiv.textContent = hist.length + ' atendimento' + (hist.length !== 1 ? 's' : '') + ' · Total: ' + Format.currency(total);
+      infoDiv.appendChild(resumoDiv);
+      headerDiv.appendChild(infoDiv);
+      // Monta a tabela como antes
+      let tableHtml = '<table style="width:100%"><thead><tr><th>Serviço</th><th>Data</th><th>Valor</th></tr></thead><tbody>';
+      tableHtml += hist.map(h => {
+        const s = DB.getServicoPorId(h.servicoId);
+        return '<tr>' +
+          '<td>' + (s?.nome || 'Removido') + '</td>' +
+          '<td style="color:var(--text-muted)">' + Format.date(h.data) + '</td>' +
+          '<td style="font-weight:600;color:var(--green)">' + Format.currency(h.valor) + '</td>' +
+        '</tr>';
+      }).join('');
+      tableHtml += '</tbody></table>';
+      body.innerHTML = '';
+      body.appendChild(headerDiv);
+      const tableWrapper = document.createElement('div');
+      tableWrapper.innerHTML = tableHtml;
+      body.appendChild(tableWrapper);
+
+    } // fim do else
 
     Modal.open('clienteHistModal');
   }
