@@ -154,10 +154,11 @@ const DB = {
     if (!ag) return;
     ag.status = 'concluido';
     this.set(this.KEYS.AGENDAMENTOS, ags);
-    // Adiciona ao histórico
+    // Adiciona ao histórico preservando o vínculo com o funcionário, quando existir
     this.addHistorico({
       clienteId: ag.clienteId,
       servicoId: ag.servicoId,
+      funcionarioId: ag.funcionarioId || '',
       valor: ag.valor || 0,
       data: ag.data,
       hora: ag.hora,

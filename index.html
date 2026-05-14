@@ -41,8 +41,14 @@
       <a href="pages/historico.html" class="nav-item" data-page="#historico">
         <span class="nav-item-icon">📋</span> Histórico
       </a>
+      <a href="pages/comissoes.html" class="nav-item" data-page="#comissoes">
+        <span class="nav-item-icon">💰</span> Comissões
+      </a>
       <div class="nav-section-label" style="margin-top:8px">Sistema</div>
-      <a href="pages/config.html" class="nav-item" data-page="#config">
+      <a href="pages/funcionarios.html" class="nav-item admin-only" data-page="#funcionarios">
+        <span class="nav-item-icon">👥</span> Funcionários
+      </a>
+      <a href="pages/config.html" class="nav-item admin-only" data-page="#config">
         <span class="nav-item-icon">⚙️</span> Configurações
       </a>
     </nav>
@@ -86,6 +92,8 @@
           🔔
           <span class="notif-dot" id="notifDot" style="display:none"></span>
         </button>
+        <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
+        <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
         <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
 
@@ -363,6 +371,8 @@
 
 <script src="js/db.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/mobile.js"></script>
+<script src="js/charts.js"></script>
 </body>
 </html>

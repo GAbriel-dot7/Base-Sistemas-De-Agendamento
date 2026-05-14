@@ -73,6 +73,8 @@
         <button class="topbar-btn" data-tooltip="Notificações" aria-label="Notificações">
           🔔
         </button>
+        <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
+        <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
         <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
 
@@ -175,10 +177,10 @@ function exportToPDF() {
   const ticketMedio = total / hist.length;
   
   printWindow.document.write(
-    '<!DOCTYPE html>' +
-    '<html>' +
-    '<head>' +
-    `<title>Relatório - ${config.nome || 'SGCM'}</title>` +
+  '<!DOCTYPE html>' +
+  '<html>' +
+  '<head>' +
+  `<title>Relatório - ${escapeHTML(config.nome || 'SGCM')}</title>` +
     '<meta charset="UTF-8">' +
     '<style>' +
     '* { margin: 0; padding: 0; box-sizing: border-box; }' +
@@ -199,9 +201,9 @@ function exportToPDF() {
     '</head>' +
     '<body>' +
     `<div class="header">
-      <h1>📋 ${config.nome || 'SGCM'} - Relatório de Atendimentos</h1>
+      <h1>📋 ${escapeHTML(config.nome || 'SGCM')} - Relatório de Atendimentos</h1>
       <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-      <p>Período: ${document.getElementById('filterDe')?.value || 'Todas'} até ${document.getElementById('filterAte')?.value || 'Todas'}</p>
+      <p>Período: ${escapeHTML(document.getElementById('filterDe')?.value || 'Todas')} até ${escapeHTML(document.getElementById('filterAte')?.value || 'Todas')}</p>
     </div>` +
     '<div class="stats">' +
       `<div class="stat-box"><div class="value">${Format.currency(total)}</div><div class="label">Receita Total</div></div>` +
@@ -215,11 +217,11 @@ function exportToPDF() {
           const c = DB.getClienteById(h.clienteId);
           const s = DB.getServicoPorId(h.servicoId);
           return `<tr>` +
-            `<td>${c?.nome || 'Removido'}</td>` +
-            `<td>${s?.nome || 'Removido'}</td>` +
-            `<td>${Format.currency(h.valor)}</td>` +
-            `<td>${Format.date(h.data)}</td>` +
-            `<td>${h.hora || '—'}</td>` +
+            `<td>${escapeHTML(c?.nome || 'Removido')}</td>` +
+            `<td>${escapeHTML(s?.nome || 'Removido')}</td>` +
+            `<td>${escapeHTML(Format.currency(h.valor))}</td>` +
+            `<td>${escapeHTML(Format.date(h.data))}</td>` +
+            `<td>${escapeHTML(h.hora || '—')}</td>` +
           `</tr>`;
         }).join('') +
       '</tbody>' +
@@ -320,7 +322,7 @@ function getFilteredHistorico() {
       clientCell.appendChild(avatarDiv);
       const nameSpan = document.createElement('span');
       nameSpan.style.fontWeight = '600';
-      nameSpan.innerHTML = c?.nome ? c.nome : "<span style='color:var(--text-muted);'>Removido</span>";
+      if (c?.nome) nameSpan.textContent = c.nome; else nameSpan.innerHTML = "<span style='color:var(--text-muted);'>Removido</span>";
       clientCell.appendChild(nameSpan);
       const tdClient = document.createElement('td');
       tdClient.appendChild(clientCell);
@@ -329,7 +331,7 @@ function getFilteredHistorico() {
       // Monta as outras células manualmente para evitar problemas de template literal
       const tdServico = document.createElement('td');
       tdServico.style.fontWeight = '500';
-      tdServico.innerHTML = s?.nome ? s.nome : "<span style='color:var(--text-muted);'>Removido</span>";
+      if (s?.nome) tdServico.textContent = s.nome; else tdServico.innerHTML = "<span style='color:var(--text-muted);'>Removido</span>";
       tr.appendChild(tdServico);
 
       const tdValor = document.createElement('td');
@@ -378,6 +380,7 @@ function getFilteredHistorico() {
 
 <script src="../js/db.js"></script>
 <script src="../js/ui.js"></script>
+<script src="../js/auth.js"></script>
 <script src="../js/mobile.js"></script>
 </body>
 </html>

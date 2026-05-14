@@ -73,6 +73,8 @@
         <button class="topbar-btn" data-tooltip="Notificações" aria-label="Notificações">
           🔔
         </button>
+        <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
+        <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
         <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
 
@@ -225,7 +227,7 @@ function populateFuncionarios() {
   const usuarios = Auth.getUsuarios().filter(u => u.ativo);
   select.innerHTML = '<option value="">Selecionar funcionário...</option>';
   usuarios.forEach(u => {
-    select.innerHTML += `<option value="${u.id}">${u.nome} (${u.role === 'admin' ? 'Admin' : 'Atendente'})</option>`;
+    select.innerHTML += `<option value="${u.id}">${escapeHTML(u.nome)} (${u.role === 'admin' ? 'Admin' : 'Atendente'})</option>`;
   });
 }
 
@@ -336,23 +338,23 @@ window.salvarAgendamento = function() {
       tr.innerHTML = `
         <td>
           <div class="client-cell">
-            <div class="avatar" style="background:${color}">${Format.initials(c?.nome||'?')}</div>
-            <span style="font-weight:600">${c?.nome || '<span style=\"color:var(--text-muted)\">Cliente removido</span>'}</span>
+            <div class="avatar" style="background:${escapeHTML(color)}">${escapeHTML(Format.initials(c?.nome||'?'))}</div>
+            <span style="font-weight:600">${c?.nome ? escapeHTML(c.nome) : '<span style="color:var(--text-muted)">Cliente removido</span>'}</span>
           </div>
         </td>
-        <td style="font-weight:500">${s?.nome || '<span style=\"color:var(--text-muted)\">Serviço removido</span>'}</td>
+        <td style="font-weight:500">${s?.nome ? escapeHTML(s.nome) : '<span style="color:var(--text-muted)">Serviço removido</span>'}</td>
         <td>
-          <div style="font-weight:600">${Format.date(ag.data)}</div>
-          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${ag.hora || '—'}</div>
+          <div style="font-weight:600">${escapeHTML(Format.date(ag.data))}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${escapeHTML(ag.hora || '—')}</div>
         </td>
-        <td style="font-weight:700;color:var(--green)">${Format.currency(ag.valor)}</td>
-        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ag.observacao || '—'}</td>
+        <td style="font-weight:700;color:var(--green)">${escapeHTML(Format.currency(ag.valor))}</td>
+        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(ag.observacao || '—')}</td>
         <td>${statusMap[ag.status] || statusMap.agendado}</td>
         <td>
           <div class="table-actions" style="justify-content:flex-end">
-            ${ag.status === 'agendado' ? `<button class=\"btn btn-success btn-sm\" onclick=\"concluirAg('${ag.id}')\" data-tooltip=\"Marcar como concluído\">✅ Concluir</button>` : ''}
-            <button class=\"btn btn-secondary btn-sm btn-icon\" onclick=\"editarAg('${ag.id}')\" data-tooltip=\"Editar\">✏️</button>
-            <button class=\"btn btn-danger btn-sm btn-icon\" onclick=\"excluirAg('${ag.id}')\" data-tooltip=\"Excluir\">🗑️</button>
+            ${ag.status === 'agendado' ? `<button class=\"btn btn-success btn-sm\" onclick=\"concluirAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Marcar como concluído\">✅ Concluir</button>` : ''}
+            <button class=\"btn btn-secondary btn-sm btn-icon\" onclick=\"editarAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Editar\">✏️</button>
+            <button class=\"btn btn-danger btn-sm btn-icon\" onclick=\"excluirAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Excluir\">🗑️</button>
           </div>
         </td>
       `;
@@ -399,23 +401,23 @@ function renderAgendamentosPagination(currentPage, totalPages) {
       tr.innerHTML = `
         <td>
           <div class="client-cell">
-            <div class="avatar" style="background:${color}">${Format.initials(c?.nome||'?')}</div>
-            <span style="font-weight:600">${c?.nome || '<span style="color:var(--text-muted)">Cliente removido</span>'}</span>
+            <div class="avatar" style="background:${escapeHTML(color)}">${escapeHTML(Format.initials(c?.nome||'?'))}</div>
+            <span style="font-weight:600">${c?.nome ? escapeHTML(c.nome) : '<span style="color:var(--text-muted)">Cliente removido</span>'}</span>
           </div>
         </td>
-        <td style="font-weight:500">${s?.nome || '<span style="color:var(--text-muted)">Serviço removido</span>'}</td>
+        <td style="font-weight:500">${s?.nome ? escapeHTML(s.nome) : '<span style="color:var(--text-muted)">Serviço removido</span>'}</td>
         <td>
-          <div style="font-weight:600">${Format.date(ag.data)}</div>
-          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${ag.hora || '—'}</div>
+          <div style="font-weight:600">${escapeHTML(Format.date(ag.data))}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${escapeHTML(ag.hora || '—')}</div>
         </td>
-        <td style="font-weight:700;color:var(--green)">${Format.currency(ag.valor)}</td>
-        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ag.observacao || '—'}</td>
+        <td style="font-weight:700;color:var(--green)">${escapeHTML(Format.currency(ag.valor))}</td>
+        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(ag.observacao || '—')}</td>
         <td>${statusMap[ag.status] || statusMap.agendado}</td>
         <td>
           <div class="table-actions" style="justify-content:flex-end">
-            ${ag.status === 'agendado' ? `<button class="btn btn-success btn-sm" onclick="concluirAg('${ag.id}')" data-tooltip="Marcar como concluído">✅ Concluir</button>` : ''}
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarAg('${ag.id}')" data-tooltip="Editar">✏️</button>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirAg('${ag.id}')" data-tooltip="Excluir">🗑️</button>
+            ${ag.status === 'agendado' ? `<button class=\"btn btn-success btn-sm\" onclick=\"concluirAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Marcar como concluído\">✅ Concluir</button>` : ''}
+            <button class=\"btn btn-secondary btn-sm btn-icon\" onclick=\"editarAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Editar\">✏️</button>
+            <button class=\"btn btn-danger btn-sm btn-icon\" onclick=\"excluirAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Excluir\">🗑️</button>
           </div>
         </td>
       `;
@@ -432,12 +434,12 @@ function renderAgendamentosPagination(currentPage, totalPages) {
 
     clienteSelect.innerHTML = '<option value="">Selecionar cliente...</option>';
     clientes.forEach(c => {
-      clienteSelect.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+      clienteSelect.innerHTML += `<option value="${c.id}">${escapeHTML(c.nome)}</option>`;
     });
 
     servicoSelect.innerHTML = '<option value="">Selecionar serviço...</option>';
     servicos.forEach(s => {
-      servicoSelect.innerHTML += `<option value="${s.id}" data-preco="${s.preco}">${s.nome} — ${Format.currency(s.preco)}</option>`;
+      servicoSelect.innerHTML += `<option value="${s.id}" data-preco="${s.preco}">${escapeHTML(s.nome)} — ${escapeHTML(Format.currency(s.preco))}</option>`;
     });
   }
 
@@ -491,26 +493,29 @@ function renderAgendamentosPagination(currentPage, totalPages) {
     if (!data) { Notify.error('Campo obrigatório', 'Informe a data.'); return; }
     if (!hora) { Notify.error('Campo obrigatório', 'Informe o horário.'); return; }
 
-    // NOVA VALIDAÇÃO: Verifica conflito de horários
+    // Verifica conflito de horários com outros agendamentos ativos
     const temConflito = hasTimeConflict(data, hora, servicoId, agId || null);
     if (temConflito) {
-
-    const inicioNovo = horaParaMinutos(hora);
-    const fimNovo = inicioNovo + duracao;
-
-    for (const ag of agendamentos) {
-      const inicioExistente = horaParaMinutos(ag.hora);
-      const servicoExistente = DB.getServicoPorId(ag.servicoId);
-      const duracaoExistente = parseInt(servicoExistente?.duracao || '30', 10);
-      const fimExistente = inicioExistente + duracaoExistente;
-      // Verifica sobreposição
-      if (
-        (inicioNovo < fimExistente && fimNovo > inicioExistente)
-      ) {
-        return true;
-      }
+      Notify.error('Conflito de horário', 'Já existe um agendamento nesse intervalo.');
+      return;
     }
-    return false;
+
+    const agendamento = {
+      id: agId || null,
+      clienteId,
+      servicoId,
+      data,
+      hora,
+      valor: parseFloat(document.getElementById('agValor').value) || 0,
+      status: document.getElementById('agStatus').value || 'agendado',
+      observacao: document.getElementById('agObs').value.trim(),
+      funcionarioId: document.getElementById('agFuncionario')?.value || '',
+    };
+
+    DB.saveAgendamento(agendamento);
+    Modal.close('agModal');
+    renderAgendamentos(document.getElementById('topbarSearchInput')?.value || '');
+    Notify.success('Agendamento salvo!', agId ? 'O agendamento foi atualizado.' : 'Novo agendamento criado com sucesso.');
   }
 
   function concluirAg(id) {
@@ -553,6 +558,7 @@ function renderAgendamentosPagination(currentPage, totalPages) {
 
 <script src="../js/db.js"></script>
 <script src="../js/ui.js"></script>
+<script src="../js/auth.js"></script>
 <script src="../js/mobile.js"></script>
 </body>
 </html>

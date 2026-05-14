@@ -73,6 +73,8 @@
         <button class="topbar-btn" data-tooltip="Notificações" aria-label="Notificações">
           🔔
         </button>
+        <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
+        <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
         <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
 
@@ -216,7 +218,7 @@ function renderServicosPaginated(filter = '') {
   const config = DB.getConfig();
   const showDuracao = config.modulos?.duracao !== false;
 
-  pageServicos.forEach(s => {
+    pageServicos.forEach(s => {
     const card = document.createElement('div');
     card.className = 'card';
     card.style.padding = '20px';
@@ -224,17 +226,17 @@ function renderServicosPaginated(filter = '') {
     card.innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
         <div style="width:44px;height:44px;border-radius:var(--radius-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:22px">
-          ${pickEmoji(s.nome)}
+          ${escapeHTML(pickEmoji(s.nome))}
         </div>
         <div class="table-actions">
-          <button class="btn btn-secondary btn-sm btn-icon" onclick="editarServico('${s.id}')" data-tooltip="Editar">✏️</button>
-          <button class="btn btn-danger btn-sm btn-icon" onclick="excluirServico('${s.id}', '${(s.nome || '').replace(/'/g, "\\'")}')" data-tooltip="Excluir">🗑️</button>
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="editarServico('${escapeHTML(s.id)}')" data-tooltip="Editar">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="excluirServico('${escapeHTML(s.id)}')" data-tooltip="Excluir">🗑️</button>
         </div>
       </div>
-      <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">${s.nome || '—'}</div>
-      ${s.descricao ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5">${s.descricao}</div>` : '<div style="margin-bottom:12px"></div>'}
+      <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">${escapeHTML(s.nome || '—')}</div>
+      ${s.descricao ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5">${escapeHTML(s.descricao)}</div>` : '<div style="margin-bottom:12px"></div>'}
       <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border-soft)">
-        <div style="font-size:1.2rem;font-weight:800;color:var(--primary)">${Format.currency(s.preco)}</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary)">${escapeHTML(Format.currency(s.preco))}</div>
         ${showDuracao && s.duracao ? `<span class="badge badge-blue">⏱ ${Format.duration(s.duracao)}</span>` : ''}
       </div>
     `;
@@ -280,6 +282,13 @@ function changePageServicos(page) {
   currentPageServicos = page;
   const searchValue = document.getElementById('searchServicos')?.value || '';
   renderServicosPaginated(searchValue);
+}
+
+function renderServicos(filter = '') {
+  const searchInput = document.getElementById('searchServicos');
+  if (searchInput) searchInput.value = filter;
+  currentPageServicos = 1;
+  renderServicosPaginated(filter);
 }
 
 // Sobrescrever o evento de busca
@@ -346,7 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // CORRIGIDA: Exclusão com verificação de agendamentos futuros
-function excluirServico(id, nome) {
+function excluirServico(id) {
+  const nome = DB.getServicoPorId(id)?.nome || '';
   // Verifica se o serviço tem agendamentos futuros (não concluídos)
   const agendamentos = DB.getAgendamentos();
   const agendamentosFuturos = agendamentos.filter(ag => {
@@ -383,6 +393,7 @@ renderServicos();
 
 <script src="../js/db.js"></script>
 <script src="../js/ui.js"></script>
+<script src="../js/auth.js"></script>
 <script src="../js/mobile.js"></script>
 </body>
 </html>

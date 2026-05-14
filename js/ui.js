@@ -68,6 +68,19 @@ function hexToRgbaLight(hex) {
   }
 }
 
+// Escapa texto para evitar XSS (uso em templates onde innerHTML é necessário)
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// Disponibiliza globalmente
+window.escapeHTML = escapeHTML;
+
 // ──────────────────────────────────────────
 // VALIDAÇÃO DE CONFLITO DE HORÁRIOS (NOVA FUNÇÃO)
 // ──────────────────────────────────────────
@@ -365,8 +378,21 @@ const DarkMode = {
       document.body.classList.add('dark-mode');
       this.updateToggleIcon(true);
     }
-    // Adiciona botão na topbar se existir
-    this.addToggleButton();
+    // Adiciona listeners aos botões de dark mode (tanto id 'darkModeToggle' quanto 'darkModeToggleTopbar')
+    this.setupToggleButtons();
+  },
+  setupToggleButtons() {
+    // Para botões com id 'darkModeToggleTopbar' (na topbar)
+    const topbarBtn = document.getElementById('darkModeToggleTopbar');
+    if (topbarBtn) {
+      topbarBtn.addEventListener('click', () => this.toggle());
+      this.updateToggleIcon(document.body.classList.contains('dark-mode'));
+    }
+    // Também mantém suporte para 'darkModeToggle' (se existir)
+    const legacyBtn = document.getElementById('darkModeToggle');
+    if (legacyBtn) {
+      legacyBtn.addEventListener('click', () => this.toggle());
+    }
   },
   addToggleButton() {
     // Procura o local onde adicionar o botão (topbar-actions)
@@ -391,9 +417,14 @@ const DarkMode = {
     }
   },
   updateToggleIcon(isDark) {
-    const btn = document.getElementById('darkModeToggle');
-    if (btn) {
-      btn.innerHTML = isDark ? '☀️' : '🌙';
+    // Atualiza ícone em ambos os possíveis botões
+    const topbarBtn = document.getElementById('darkModeToggleTopbar');
+    if (topbarBtn) {
+      topbarBtn.innerHTML = isDark ? '☀️' : '🌙';
+    }
+    const legacyBtn = document.getElementById('darkModeToggle');
+    if (legacyBtn) {
+      legacyBtn.innerHTML = isDark ? '☀️' : '🌙';
     }
   },
   toggle() {

@@ -50,6 +50,9 @@
       </button>
       <div class="topbar-title">👥 Funcionários</div>
       <div class="topbar-actions">
+        <button class="topbar-btn" data-tooltip="Notificações" aria-label="Notificações">
+          🔔
+        </button>
         <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
         <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
       </div>
@@ -170,15 +173,15 @@
     usuarios.forEach(u => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${u.nome}</strong></td>
-        <td>${u.email}</td>
+        <td><strong>${escapeHTML(u.nome)}</strong></td>
+        <td>${escapeHTML(u.email)}</td>
         <td><span class="badge ${u.role === 'admin' ? 'badge-purple' : 'badge-blue'}">${u.role === 'admin' ? 'Admin' : 'Atendente'}</span></td>
-        <td>${u.comissao || 0}%</td>
+        <td>${escapeHTML(String(u.comissao || 0))}%</td>
         <td>${u.ativo ? '<span class="badge badge-green">Ativo</span>' : '<span class="badge badge-red">Inativo</span>'}</td>
         <td style="text-align:right">
           <div class="table-actions" style="justify-content:flex-end">
-            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarUsuario('${u.id}')">✏️</button>
-            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirUsuario('${u.id}', '${u.nome}')">🗑️</button>
+            <button class="btn btn-secondary btn-sm btn-icon" onclick="editarUsuario('${escapeHTML(u.id)}')">✏️</button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="excluirUsuario('${escapeHTML(u.id)}')">🗑️</button>
           </div>
         </td>
       `;
@@ -243,8 +246,9 @@
     Notify.success('Salvo!', `Funcionário ${nome} foi ${id ? 'atualizado' : 'cadastrado'}.`);
   }
   
-  function excluirUsuario(id, nome) {
-    confirmDelete(`Excluir "${nome}"?`, () => {
+  function excluirUsuario(id) {
+    const nome = Auth.getUsuarios().find(u => u.id === id)?.nome || '';
+    confirmDelete(`Excluir "${escapeHTML(nome)}"?`, () => {
       Auth.deleteUsuario(id);
       renderUsuarios();
       Notify.success('Removido', 'Funcionário excluído.');

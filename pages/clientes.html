@@ -74,6 +74,8 @@
         <button class="topbar-btn" data-tooltip="Notificações" aria-label="Notificações">
           🔔
         </button>
+        <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
+        <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
         <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
 
@@ -216,10 +218,10 @@ function exportClientesToPDF() {
   }
   const printWindow = window.open('', '_blank');
   printWindow.document.write(
-    '<!DOCTYPE html>' +
-    '<html>' +
-    '<head>' +
-    '<title>Clientes - ' + (config.nome || 'SGCM') + '</title>' +
+  '<!DOCTYPE html>' +
+  '<html>' +
+  '<head>' +
+  '<title>Clientes - ' + escapeHTML(config.nome || 'SGCM') + '</title>' +
     '<meta charset="UTF-8">' +
     '<style>' +
     '* { margin: 0; padding: 0; box-sizing: border-box; }' +
@@ -252,11 +254,11 @@ function exportClientesToPDF() {
       '<tbody>' +
         clientes.map(c =>
           '<tr>' +
-            '<td>' + (c.nome || '—') + '</td>' +
-            '<td>' + (Format.phone ? Format.phone(c.telefone) : (c.telefone || '—')) + '</td>' +
-            '<td>' + (c.email || '—') + '</td>' +
-            '<td>' + (c.obs || '—') + '</td>' +
-            '<td>' + (Format.date ? Format.date(c.createdAt?.slice(0,10)) : (c.createdAt?.slice(0,10) || '—')) + '</td>' +
+            '<td>' + escapeHTML(c.nome || '—') + '</td>' +
+            '<td>' + escapeHTML(Format.phone ? Format.phone(c.telefone) : (c.telefone || '—')) + '</td>' +
+            '<td>' + escapeHTML(c.email || '—') + '</td>' +
+            '<td>' + escapeHTML(c.obs || '—') + '</td>' +
+            '<td>' + escapeHTML(Format.date ? Format.date(c.createdAt?.slice(0,10)) : (c.createdAt?.slice(0,10) || '—')) + '</td>' +
           '</tr>'
         ).join('') +
       '</tbody>' +
@@ -290,7 +292,7 @@ function exportClientesToPDF() {
       '<!DOCTYPE html>' +
       '<html>' +
       '<head>' +
-      '<title>Relatório - ' + (config.nome || 'SGCM') + '</title>' +
+    '<title>Relatório - ' + escapeHTML(config.nome || 'SGCM') + '</title>' +
       '<meta charset="UTF-8">' +
       '<style>' +
       '* { margin: 0; padding: 0; box-sizing: border-box; }' +
@@ -311,7 +313,7 @@ function exportClientesToPDF() {
       '</head>' +
       '<body>' +
       '<div class="header">' +
-        '<h1>📋 ' + (config.nome || 'SGCM') + ' - Relatório de Atendimentos</h1>' +
+        '<h1>📋 ' + escapeHTML(config.nome || 'SGCM') + ' - Relatório de Atendimentos</h1>' +
         '<p>Gerado em: ' + new Date().toLocaleString('pt-BR') + '</p>' +
         '<p>Período: ' + (document.getElementById('filterDe')?.value || 'Todas') + ' até ' + (document.getElementById('filterAte')?.value || 'Todas') + '</p>' +
       '</div>' +
@@ -327,11 +329,11 @@ function exportClientesToPDF() {
             const c = DB.getClienteById(h.clienteId);
             const s = DB.getServicoPorId(h.servicoId);
             return '<tr>' +
-              '<td>' + (c?.nome || 'Removido') + '</td>' +
-              '<td>' + (s?.nome || 'Removido') + '</td>' +
-              '<td>' + Format.currency(h.valor) + '</td>' +
-              '<td>' + Format.date(h.data) + '</td>' +
-              '<td>' + (h.hora || '—') + '</td>' +
+              '<td>' + escapeHTML(c?.nome || 'Removido') + '</td>' +
+              '<td>' + escapeHTML(s?.nome || 'Removido') + '</td>' +
+              '<td>' + escapeHTML(Format.currency(h.valor)) + '</td>' +
+              '<td>' + escapeHTML(Format.date(h.data)) + '</td>' +
+              '<td>' + escapeHTML(h.hora || '—') + '</td>' +
             '</tr>';
           }).join('') +
         '</tbody>' +
@@ -473,16 +475,18 @@ function exportClientesToPDF() {
       // Botão histórico
       const btnHist = document.createElement('button');
       btnHist.className = 'btn btn-secondary btn-sm btn-icon';
-      btnHist.setAttribute('onclick', `verHistorico('${c.id}')`);
+      btnHist.setAttribute('data-tooltip', 'Ver histórico');
+      btnHist.textContent = '📋';
+      btnHist.addEventListener('click', () => verHistorico(c.id));
       btnHist.setAttribute('data-tooltip', 'Ver histórico');
       btnHist.textContent = '📋';
       actionsDiv.appendChild(btnHist);
       // Botão WhatsApp
       const btnWhats = document.createElement('button');
       btnWhats.className = 'btn btn-success btn-sm btn-icon';
-      btnWhats.setAttribute('onclick', `whatsappCliente('${c.telefone}', '${c.nome}')`);
       btnWhats.setAttribute('data-tooltip', 'WhatsApp');
       btnWhats.textContent = '💬';
+      btnWhats.addEventListener('click', () => whatsappCliente(c.telefone, c.nome));
       actionsDiv.appendChild(btnWhats);
       // WhatsApp integrado
       function whatsappCliente(telefone, nome) {
@@ -500,16 +504,16 @@ function exportClientesToPDF() {
       // Botão editar
       const btnEdit = document.createElement('button');
       btnEdit.className = 'btn btn-secondary btn-sm btn-icon';
-      btnEdit.setAttribute('onclick', `editarCliente('${c.id}')`);
       btnEdit.setAttribute('data-tooltip', 'Editar');
       btnEdit.textContent = '✏️';
+      btnEdit.addEventListener('click', () => editarCliente(c.id));
       actionsDiv.appendChild(btnEdit);
       // Botão excluir
       const btnDel = document.createElement('button');
       btnDel.className = 'btn btn-danger btn-sm btn-icon';
-      btnDel.setAttribute('onclick', `excluirCliente('${c.id}', '${(c.nome || '').replace(/'/g, "\\'")}' )`);
       btnDel.setAttribute('data-tooltip', 'Excluir');
       btnDel.textContent = '🗑️';
+      btnDel.addEventListener('click', () => excluirCliente(c.id));
       actionsDiv.appendChild(btnDel);
       tdActions.appendChild(actionsDiv);
       tr.appendChild(tdActions);
@@ -571,6 +575,12 @@ function exportClientesToPDF() {
 
   function changePage(page) {
     currentPage = page;
+    renderClientesPaginated();
+  }
+
+  function renderClientes(search = '') {
+    const searchInput = document.getElementById('searchClientes');
+    if (searchInput) searchInput.value = search;
     renderClientesPaginated();
   }
 
@@ -649,8 +659,9 @@ function exportClientesToPDF() {
     Notify.success('Cliente salvo!', `${nome} foi ${cliente.id ? 'atualizado' : 'cadastrado'} com sucesso.`);
   }
 
-  function excluirCliente(id, nome) {
-    confirmDelete(`Excluir o cliente "${nome}"? Esta ação não pode ser desfeita.`, () => {
+  function excluirCliente(id) {
+    const nome = DB.getClienteById(id)?.nome || '';
+    confirmDelete(`Excluir o cliente "${escapeHTML(nome)}"? Esta ação não pode ser desfeita.`, () => {
       DB.deleteCliente(id);
       renderClientes();
       Notify.success('Cliente removido', 'O cliente foi excluído com sucesso.');
@@ -758,6 +769,7 @@ function exportClientesToPDF() {
 
 <script src="../js/db.js"></script>
 <script src="../js/ui.js"></script>
+<script src="../js/auth.js"></script>
 <script src="../js/mobile.js"></script>
 </body>
 </html>
