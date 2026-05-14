@@ -23,6 +23,18 @@ const Auth = {
     this.applyRoleBasedUI();
   },
 
+  _inPagesDir() {
+    return window.location.pathname.includes('/pages/');
+  },
+
+  _loginPath() {
+    return this._inPagesDir() ? '../login.html' : 'login.html';
+  },
+
+  _indexPath() {
+    return this._inPagesDir() ? '../index.html' : 'index.html';
+  },
+
   // Cria usuários padrão se não existirem
   createDefaultUsers() {
     const usuarios = this.getUsuarios();
@@ -96,7 +108,7 @@ const Auth = {
 
   logout() {
     localStorage.removeItem(this.KEYS.SESSION);
-    window.location.href = 'login.html';
+    window.location.href = this._loginPath();
   },
 
   getCurrentUser() {
@@ -120,7 +132,7 @@ const Auth = {
 
   requireAuth() {
     if (!this.isLoggedIn() && !window.location.pathname.includes('login.html')) {
-      window.location.href = 'login.html';
+      window.location.href = this._loginPath();
       return false;
     }
     return true;
@@ -130,7 +142,7 @@ const Auth = {
     if (!this.requireAuth()) return false;
     if (!this.isAdmin()) {
       Notify.error('Acesso negado', 'Você não tem permissão para acessar esta página.');
-      window.location.href = 'index.html';
+      window.location.href = this._indexPath();
       return false;
     }
     return true;
@@ -173,7 +185,7 @@ const Auth = {
         const result = this.login(email, senha);
         if (result.success) {
           Notify.success('Bem-vindo!', `Olá ${result.user.nome}`);
-          window.location.href = 'index.html';
+          window.location.href = this._indexPath();
         } else {
           Notify.error('Erro no login', result.error);
         }
@@ -184,7 +196,7 @@ const Auth = {
   checkSession() {
     // Redireciona se já estiver logado e tentar acessar login
     if (this.isLoggedIn() && window.location.pathname.includes('login.html')) {
-      window.location.href = 'index.html';
+      window.location.href = this._indexPath();
     }
   },
 
