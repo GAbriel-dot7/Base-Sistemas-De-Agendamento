@@ -274,82 +274,8 @@ function exportClientesToPDF() {
   printWindow.document.close();
   Notify.success('Relatório gerado', 'A janela de impressão foi aberta. Use "Salvar como PDF" para exportar.');
 }
-    const hist = getFilteredHistorico();
-    const config = DB.getConfig();
+    
   
-    if (hist.length === 0) {
-      Notify.warning('Nada para exportar', 'Não há registros no histórico no período selecionado.');
-      return;
-    }
-  
-    // Cria uma janela de impressão
-    const printWindow = window.open('', '_blank');
-  
-    const total = hist.reduce((acc, h) => acc + (parseFloat(h.valor) || 0), 0);
-    const ticketMedio = total / hist.length;
-  
-    printWindow.document.write(
-      '<!DOCTYPE html>' +
-      '<html>' +
-      '<head>' +
-    '<title>Relatório - ' + escapeHTML(config.nome || 'SGCM') + '</title>' +
-      '<meta charset="UTF-8">' +
-      '<style>' +
-      '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-      'body { font-family: "Segoe UI", Arial, sans-serif; padding: 40px; color: #333; }' +
-      '.header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #2563EB; }' +
-      '.header h1 { font-size: 24px; margin-bottom: 5px; }' +
-      '.header p { color: #666; font-size: 12px; }' +
-      '.stats { display: flex; justify-content: space-around; margin-bottom: 30px; gap: 20px; }' +
-      '.stat-box { background: #f3f4f6; padding: 15px; border-radius: 10px; text-align: center; flex: 1; }' +
-      '.stat-box .value { font-size: 28px; font-weight: bold; color: #2563EB; }' +
-      '.stat-box .label { font-size: 12px; color: #666; margin-top: 5px; }' +
-      'table { width: 100%; border-collapse: collapse; margin-top: 20px; }' +
-      'th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }' +
-      'th { background: #f3f4f6; font-weight: bold; }' +
-      '.footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 20px; }' +
-      '@media print { body { padding: 20px; } .no-print { display: none; } }' +
-      '</style>' +
-      '</head>' +
-      '<body>' +
-      '<div class="header">' +
-        '<h1>📋 ' + escapeHTML(config.nome || 'SGCM') + ' - Relatório de Atendimentos</h1>' +
-        '<p>Gerado em: ' + new Date().toLocaleString('pt-BR') + '</p>' +
-        '<p>Período: ' + (document.getElementById('filterDe')?.value || 'Todas') + ' até ' + (document.getElementById('filterAte')?.value || 'Todas') + '</p>' +
-      '</div>' +
-      '<div class="stats">' +
-        '<div class="stat-box"><div class="value">' + Format.currency(total) + '</div><div class="label">Receita Total</div></div>' +
-        '<div class="stat-box"><div class="value">' + hist.length + '</div><div class="label">Atendimentos</div></div>' +
-        '<div class="stat-box"><div class="value">' + Format.currency(ticketMedio) + '</div><div class="label">Ticket Médio</div></div>' +
-      '</div>' +
-      '<table>' +
-        '<thead><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Data</th><th>Hora</th></tr></thead>' +
-        '<tbody>' +
-          hist.map(h => {
-            const c = DB.getClienteById(h.clienteId);
-            const s = DB.getServicoPorId(h.servicoId);
-            return '<tr>' +
-              '<td>' + escapeHTML(c?.nome || 'Removido') + '</td>' +
-              '<td>' + escapeHTML(s?.nome || 'Removido') + '</td>' +
-              '<td>' + escapeHTML(Format.currency(h.valor)) + '</td>' +
-              '<td>' + escapeHTML(Format.date(h.data)) + '</td>' +
-              '<td>' + escapeHTML(h.hora || '—') + '</td>' +
-            '</tr>';
-          }).join('') +
-        '</tbody>' +
-      '</table>' +
-      '<div class="footer"><p>Relatório gerado pelo SGCM - Sistema de Gerenciamento Comercial</p></div>' +
-      '<div class="no-print" style="text-align:center;margin-top:20px">' +
-        '<button onclick="window.print()" style="padding:10px 20px;background:#2563EB;color:white;border:none;border-radius:5px;cursor:pointer">🖨️ Imprimir / Salvar PDF</button>' +
-      '</div>' +
-      '<script>// Auto-abrir diálogo de impressão (opcional)// setTimeout(() => window.print(), 500);<\/script>' +
-      '</body></html>'
-    );
-  
-    printWindow.document.close();
-    Notify.success('Relatório gerado', 'A janela de impressão foi aberta. Use "Salvar como PDF" para exportar.');
-  // ...existing code...
-
   // Helper para pegar histórico filtrado (reutilizado do render)
   function getFilteredHistorico() {
     let hist = DB.getHistorico();
