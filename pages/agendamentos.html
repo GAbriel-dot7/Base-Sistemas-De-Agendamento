@@ -368,8 +368,7 @@ window.salvarAgendamento = function() {
     renderAgendamentosPagination(currentPage, totalPages);
   }
 
-// Paginação de agendamentos
-function renderAgendamentosPagination(currentPage, totalPages) {
+  function renderAgendamentosPagination(currentPage, totalPages) {
     let pagContainer = document.getElementById('agendamentosPagination');
     if (!pagContainer) {
       pagContainer = document.createElement('div');
@@ -390,8 +389,6 @@ function renderAgendamentosPagination(currentPage, totalPages) {
       pagContainer.appendChild(btn);
     }
   }
-
-    // (duplicated rendering block removed)
 
   function populateSelects() {
     const clienteSelect = document.getElementById('agCliente');
@@ -527,14 +524,7 @@ function renderAgendamentosPagination(currentPage, totalPages) {
     document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
     filterDate('hoje');
   });
-  
-
-}
 </script>
 
-<script src="../js/db.js"></script>
-<script src="../js/ui.js"></script>
-<script src="../js/auth.js"></script>
-<script src="../js/mobile.js"></script>
 </body>
 </html>
