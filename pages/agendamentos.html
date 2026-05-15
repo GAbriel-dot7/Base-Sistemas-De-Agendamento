@@ -361,7 +361,7 @@ window.salvarAgendamento = function() {
       tbody.appendChild(tr);
     });
     renderAgendamentosPagination(currentPage, totalPages);
-
+  }
 
 // Paginação de agendamentos
 function renderAgendamentosPagination(currentPage, totalPages) {
@@ -386,44 +386,7 @@ function renderAgendamentosPagination(currentPage, totalPages) {
     }
   }
 
-    ags.forEach(ag => {
-      const c = DB.getClienteById(ag.clienteId);
-      const s = DB.getServicoPorId(ag.servicoId);
-      const color = avatarColor(c?.nome || '');
-
-      const statusMap = {
-        agendado: '<span class="badge badge-blue">Agendado</span>',
-        concluido: '<span class="badge badge-green">Concluído</span>',
-        cancelado: '<span class="badge badge-red">Cancelado</span>',
-      };
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div class="client-cell">
-            <div class="avatar" style="background:${escapeHTML(color)}">${escapeHTML(Format.initials(c?.nome||'?'))}</div>
-            <span style="font-weight:600">${c?.nome ? escapeHTML(c.nome) : '<span style="color:var(--text-muted)">Cliente removido</span>'}</span>
-          </div>
-        </td>
-        <td style="font-weight:500">${s?.nome ? escapeHTML(s.nome) : '<span style="color:var(--text-muted)">Serviço removido</span>'}</td>
-        <td>
-          <div style="font-weight:600">${escapeHTML(Format.date(ag.data))}</div>
-          <div style="font-size:0.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${escapeHTML(ag.hora || '—')}</div>
-        </td>
-        <td style="font-weight:700;color:var(--green)">${escapeHTML(Format.currency(ag.valor))}</td>
-        <td style="color:var(--text-muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(ag.observacao || '—')}</td>
-        <td>${statusMap[ag.status] || statusMap.agendado}</td>
-        <td>
-          <div class="table-actions" style="justify-content:flex-end">
-            ${ag.status === 'agendado' ? `<button class=\"btn btn-success btn-sm\" onclick=\"concluirAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Marcar como concluído\">✅ Concluir</button>` : ''}
-            <button class=\"btn btn-secondary btn-sm btn-icon\" onclick=\"editarAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Editar\">✏️</button>
-            <button class=\"btn btn-danger btn-sm btn-icon\" onclick=\"excluirAg('${escapeHTML(ag.id)}')\" data-tooltip=\"Excluir\">🗑️</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+    // (duplicated rendering block removed)
 
   function populateSelects() {
     const clienteSelect = document.getElementById('agCliente');
@@ -541,10 +504,18 @@ function renderAgendamentosPagination(currentPage, totalPages) {
   // Filtro inicial
   filterDate('hoje');
 
-  document.getElementById('topbarSearchInput')?.addEventListener('input', (e) => {
+  function _debounce(fn, delay = 220) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  document.getElementById('topbarSearchInput')?.addEventListener('input', _debounce((e) => {
     window.agendamentosCurrentPage = 1;
     renderAgendamentos(e.target.value);
-  });
+  }, 200));
 
   window.agendamentosCurrentPage = 1;
   document.addEventListener('DOMContentLoaded', () => {

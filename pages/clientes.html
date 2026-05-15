@@ -736,9 +736,18 @@ function exportClientesToPDF() {
   }
 
   // Busca em tempo real
-  document.getElementById('searchClientes').addEventListener('input', (e) => {
-    renderClientes(e.target.value);
-  });
+  function _debounce(fn, delay = 220) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  document.getElementById('searchClientes')?.addEventListener('input', _debounce((e) => {
+    currentPage = 1;
+    renderClientesPaginated();
+  }, 220));
 
   // Busca via topbar
   const topbarSearch = document.getElementById('topbarSearchInput');
@@ -750,7 +759,8 @@ function exportClientesToPDF() {
   }
   topbarSearch?.addEventListener('input', (e) => {
     document.getElementById('searchClientes').value = e.target.value;
-    renderClientes(e.target.value);
+    // debounce to avoid frequent re-renders while typing
+    _debounce(() => { currentPage = 1; renderClientesPaginated(); }, 180)();
   });
 
   // Salvar com Enter no modal

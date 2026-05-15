@@ -4,6 +4,14 @@
  */
 
 const DB = {
+  // In-memory cache to avoid reparsing localStorage on every access
+  _cache: {
+    CONFIG: null,
+    CLIENTES: null,
+    SERVICOS: null,
+    AGENDAMENTOS: null,
+    HISTORICO: null,
+  },
   // ──────────────────────────────────────────
   // CONFIGURAÇÕES
   // ──────────────────────────────────────────
@@ -28,6 +36,15 @@ const DB = {
   set(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
+      // update cache for known keys
+      switch (key) {
+        case this.KEYS.CONFIG: this._cache.CONFIG = value; break;
+        case this.KEYS.CLIENTES: this._cache.CLIENTES = value; break;
+        case this.KEYS.SERVICOS: this._cache.SERVICOS = value; break;
+        case this.KEYS.AGENDAMENTOS: this._cache.AGENDAMENTOS = value; break;
+        case this.KEYS.HISTORICO: this._cache.HISTORICO = value; break;
+        default: break;
+      }
       return true;
     } catch { return false; }
   },
@@ -36,7 +53,8 @@ const DB = {
   // CONFIGURAÇÕES DO NEGÓCIO
   // ──────────────────────────────────────────
   getConfig() {
-    return this.get(this.KEYS.CONFIG) || {
+    if (this._cache.CONFIG) return this._cache.CONFIG;
+    const cfg = this.get(this.KEYS.CONFIG) || {
       nome: 'Meu Negócio',
       slogan: 'Bem-vindo ao sistema',
       cor: '#2563EB',
@@ -48,6 +66,8 @@ const DB = {
         agendamentos: true,
       }
     };
+    this._cache.CONFIG = cfg;
+    return cfg;
   },
 
   saveConfig(config) {
@@ -58,7 +78,10 @@ const DB = {
   // CLIENTES
   // ──────────────────────────────────────────
   getClientes() {
-    return this.get(this.KEYS.CLIENTES) || [];
+    if (this._cache.CLIENTES) return this._cache.CLIENTES;
+    const c = this.get(this.KEYS.CLIENTES) || [];
+    this._cache.CLIENTES = c;
+    return c;
   },
 
   saveCliente(cliente) {
@@ -74,12 +97,14 @@ const DB = {
       clientes.unshift(cliente);
     }
     this.set(this.KEYS.CLIENTES, clientes);
+    this._cache.CLIENTES = clientes;
     return cliente;
   },
 
   deleteCliente(id) {
     const clientes = this.getClientes().filter(c => c.id !== id);
     this.set(this.KEYS.CLIENTES, clientes);
+    this._cache.CLIENTES = clientes;
   },
 
   getClienteById(id) {
@@ -90,7 +115,10 @@ const DB = {
   // SERVIÇOS
   // ──────────────────────────────────────────
   getServicos() {
-    return this.get(this.KEYS.SERVICOS) || [];
+    if (this._cache.SERVICOS) return this._cache.SERVICOS;
+    const s = this.get(this.KEYS.SERVICOS) || [];
+    this._cache.SERVICOS = s;
+    return s;
   },
 
   saveServico(servico) {
@@ -104,12 +132,14 @@ const DB = {
       servicos.unshift(servico);
     }
     this.set(this.KEYS.SERVICOS, servicos);
+    this._cache.SERVICOS = servicos;
     return servico;
   },
 
   deleteServico(id) {
     const servicos = this.getServicos().filter(s => s.id !== id);
     this.set(this.KEYS.SERVICOS, servicos);
+    this._cache.SERVICOS = servicos;
   },
 
   getServicoPorId(id) {
@@ -120,7 +150,10 @@ const DB = {
   // AGENDAMENTOS
   // ──────────────────────────────────────────
   getAgendamentos() {
-    return this.get(this.KEYS.AGENDAMENTOS) || [];
+    if (this._cache.AGENDAMENTOS) return this._cache.AGENDAMENTOS;
+    const a = this.get(this.KEYS.AGENDAMENTOS) || [];
+    this._cache.AGENDAMENTOS = a;
+    return a;
   },
 
   saveAgendamento(ag) {
@@ -135,12 +168,14 @@ const DB = {
       ags.unshift(ag);
     }
     this.set(this.KEYS.AGENDAMENTOS, ags);
+    this._cache.AGENDAMENTOS = ags;
     return ag;
   },
 
   deleteAgendamento(id) {
     const ags = this.getAgendamentos().filter(a => a.id !== id);
     this.set(this.KEYS.AGENDAMENTOS, ags);
+    this._cache.AGENDAMENTOS = ags;
   },
 
   getAgendamentosHoje() {
@@ -154,6 +189,7 @@ const DB = {
     if (!ag) return;
     ag.status = 'concluido';
     this.set(this.KEYS.AGENDAMENTOS, ags);
+    this._cache.AGENDAMENTOS = ags;
     // Adiciona ao histórico preservando o vínculo com o funcionário, quando existir
     this.addHistorico({
       clienteId: ag.clienteId,
@@ -170,7 +206,10 @@ const DB = {
   // HISTÓRICO
   // ──────────────────────────────────────────
   getHistorico() {
-    return this.get(this.KEYS.HISTORICO) || [];
+    if (this._cache.HISTORICO) return this._cache.HISTORICO;
+    const h = this.get(this.KEYS.HISTORICO) || [];
+    this._cache.HISTORICO = h;
+    return h;
   },
 
   addHistorico(entry) {
@@ -179,6 +218,7 @@ const DB = {
     entry.registradoEm = new Date().toISOString();
     hist.unshift(entry);
     this.set(this.KEYS.HISTORICO, hist);
+    this._cache.HISTORICO = hist;
     return entry;
   },
 
