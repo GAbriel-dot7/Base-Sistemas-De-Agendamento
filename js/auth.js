@@ -23,16 +23,15 @@ const Auth = {
     this.applyRoleBasedUI();
   },
 
-  _inPagesDir() {
-    return window.location.pathname.includes('/pages/');
+  // For deployments without a login page, these methods are no-ops
+  setupLoginForm() {
+    // intentionally left blank when login page is not used
+    return;
   },
 
-  _loginPath() {
-    return this._inPagesDir() ? '../login.html' : 'login.html';
-  },
-
-  _indexPath() {
-    return this._inPagesDir() ? '../index.html' : 'index.html';
+  checkSession() {
+    // no-op: system intentionally runs without login page
+    return;
   },
 
   // Cria usuários padrão se não existirem
@@ -108,7 +107,8 @@ const Auth = {
 
   logout() {
     localStorage.removeItem(this.KEYS.SESSION);
-    window.location.href = this._loginPath();
+    // Reload to apply role-based UI changes without redirecting to a login page
+    window.location.href = 'index.html';
   },
 
   getCurrentUser() {
@@ -131,10 +131,7 @@ const Auth = {
   },
 
   requireAuth() {
-    if (!this.isLoggedIn() && !window.location.pathname.includes('login.html')) {
-      window.location.href = this._loginPath();
-      return false;
-    }
+    // Authentication not enforced in this deployment mode
     return true;
   },
 
@@ -142,7 +139,6 @@ const Auth = {
     if (!this.requireAuth()) return false;
     if (!this.isAdmin()) {
       Notify.error('Acesso negado', 'Você não tem permissão para acessar esta página.');
-      window.location.href = this._indexPath();
       return false;
     }
     return true;
@@ -175,29 +171,13 @@ const Auth = {
   },
 
   setupLoginForm() {
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail')?.value;
-        const senha = document.getElementById('loginSenha')?.value;
-        
-        const result = this.login(email, senha);
-        if (result.success) {
-          Notify.success('Bem-vindo!', `Olá ${result.user.nome}`);
-          window.location.href = this._indexPath();
-        } else {
-          Notify.error('Erro no login', result.error);
-        }
-      });
-    }
+    // No login form available in this mode
+    return;
   },
 
   checkSession() {
-    // Redireciona se já estiver logado e tentar acessar login
-    if (this.isLoggedIn() && window.location.pathname.includes('login.html')) {
-      window.location.href = this._indexPath();
-    }
+    // No session checks when operating without a login page
+    return;
   },
 
   // Helpers
