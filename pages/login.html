@@ -105,6 +105,32 @@
     const config = DB.getConfig();
     const loginEmoji = document.getElementById('loginEmoji');
     const loginBusinessName = document.getElementById('loginBusinessName');
+    const loginForm = document.getElementById('loginForm');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginSenha = document.getElementById('loginSenha');
+
+    if (Auth.isLoggedIn()) {
+      window.location.href = '../index.html';
+      return;
+    }
+
+    if (loginForm) {
+      loginForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const email = loginEmail?.value.trim() || '';
+        const senha = loginSenha?.value || '';
+
+        const result = Auth.login(email, senha);
+        if (!result.success) {
+          Notify.error('Falha no login', result.error || 'Verifique seus dados de acesso.');
+          return;
+        }
+
+        Notify.success('Bem-vindo!', `Login realizado como ${result.user?.nome || 'usuário'}.`);
+        window.location.href = '../index.html';
+      });
+    }
     
     if (loginEmoji) loginEmoji.textContent = config.emoji || '✂️';
     if (loginBusinessName) loginBusinessName.textContent = config.nome || 'SGCM';

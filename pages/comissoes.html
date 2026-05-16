@@ -55,6 +55,7 @@
         </button>
         <button class="dark-mode-toggle" id="darkModeToggleTopbar">🌙</button>
         <button class="topbar-btn" onclick="Auth.logout()" data-tooltip="Sair">🚪</button>
+        <div class="topbar-avatar" id="topbarAvatar" aria-label="Usuário">A</div>
       </div>
     </header>
 
@@ -62,7 +63,10 @@
       <div class="page-header">
         <div class="page-header-left">
           <h1>💰 Comissões dos Funcionários</h1>
-          <p>Relatório de comissões baseado nos atendimentos concluídos</p>
+          <p>Relatório de comissões baseado nos atendimentos concluídos.</p>
+          <p style="color:var(--text-secondary);font-size:0.9rem;max-width:760px">
+            Esta tela mostra quanto cada funcionário gerou em receita e qual o valor de comissão a pagar no período selecionado.
+          </p>
         </div>
         <button class="btn btn-secondary" onclick="exportComissoesPDF()">📄 Exportar PDF</button>
       </div>
@@ -396,7 +400,8 @@
     // Atualizar informações do usuário na sidebar
     const currentUser = Auth.getCurrentUser();
     if (currentUser) {
-      document.getElementById('topbarAvatar').textContent = (currentUser.nome || 'A')[0];
+      const topbarAvatar = document.getElementById('topbarAvatar');
+      if (topbarAvatar) topbarAvatar.textContent = (currentUser.nome || 'A')[0];
       document.getElementById('ownerName').textContent = currentUser.nome || 'Admin';
       document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Administrador' : 'Atendente';
     }
