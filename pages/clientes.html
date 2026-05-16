@@ -524,10 +524,9 @@ function exportClientesToPDF() {
 
   // Substituir a chamada inicial
   document.addEventListener('DOMContentLoaded', () => {
-    renderClientesPaginated();
     document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
-  
-    // Aplicar máscara de telefone
+
+    // Aplicar máscara de telefone (preparação)
     const telefoneInput = document.getElementById('clienteTelefone');
     if (telefoneInput && typeof setupPhoneMask === 'function') {
       setupPhoneMask(telefoneInput);
@@ -579,18 +578,39 @@ function exportClientesToPDF() {
       obs: document.getElementById('clienteObs').value.trim(),
     };
 
-    DB.saveCliente(cliente);
-    Modal.close('clienteModal');
-    renderClientes();
-    Notify.success('Cliente salvo!', `${nome} foi ${cliente.id ? 'atualizado' : 'cadastrado'} com sucesso.`);
+    (async () => {
+      try {
+        if (RemoteDB && RemoteDB.configured) {
+          const remoteSaved = await RemoteDB.saveCliente(cliente);
+          // ensure local copy matches remote
+          DB.saveCliente(remoteSaved);
+        } else {
+          DB.saveCliente(cliente);
+        }
+        Modal.close('clienteModal');
+        renderClientes();
+        Notify.success('Cliente salvo!', `${nome} foi ${cliente.id ? 'atualizado' : 'cadastrado'} com sucesso.`);
+      } catch (e) {
+        // fallback local
+        DB.saveCliente(cliente);
+        Modal.close('clienteModal');
+        renderClientes();
+        Notify.warning('Operação parcial', 'Cliente salvo localmente. Houveram problemas ao salvar remotamente.');
+      }
+    })();
   }
 
   function excluirCliente(id) {
     const nome = DB.getClienteById(id)?.nome || '';
     confirmDelete(`Excluir o cliente "${escapeHTML(nome)}"? Esta ação não pode ser desfeita.`, () => {
-      DB.deleteCliente(id);
-      renderClientes();
-      Notify.success('Cliente removido', 'O cliente foi excluído com sucesso.');
+      (async () => {
+        try {
+          if (RemoteDB && RemoteDB.configured) await RemoteDB.deleteCliente(id);
+        } catch (e) {}
+        DB.deleteCliente(id);
+        renderClientes();
+        Notify.success('Cliente removido', 'O cliente foi excluído com sucesso.');
+      })();
     });
   }
 
@@ -696,16 +716,23 @@ function exportClientesToPDF() {
     }
   });
 
-  // Init
-  document.addEventListener('DOMContentLoaded', () => {
+  // Init: se houver RemoteDB configurado, baixar e importar antes de renderizar
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      RemoteDB.initFromConfig();
+      if (RemoteDB.configured) await RemoteDB.pullAndImportAll();
+    } catch (e) {
+      // fallback silencioso
+    }
     renderClientes(searchParam || '');
     document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
   });
 </script>
 
 <script src="../js/db.js"></script>
-<script src="../js/ui.js"></script>
 <script src="../js/auth.js"></script>
+<script src="../js/remote-db.js"></script>
+<script src="../js/ui.js"></script>
 <script src="../js/mobile.js"></script>
 </body>
 </html>

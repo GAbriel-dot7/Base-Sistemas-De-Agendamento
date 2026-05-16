@@ -298,7 +298,11 @@ const originalSearchServicos = () => {
 };
 
 // Substituir no DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    RemoteDB.initFromConfig();
+    if (RemoteDB.configured) await RemoteDB.pullAndImportAll();
+  } catch (e) {}
   renderServicosPaginated();
   document.getElementById('topbarAvatar').textContent = (DB.getConfig().owner || 'A')[0].toUpperCase();
   document.getElementById('searchServicos')?.addEventListener('input', originalSearchServicos);
@@ -348,10 +352,24 @@ document.addEventListener('DOMContentLoaded', () => {
       descricao: document.getElementById('servicoDescricao').value.trim(),
     };
 
-    DB.saveServico(servico);
-    Modal.close('servicoModal');
-    renderServicos();
-    Notify.success('Serviço salvo!', `"${nome}" foi ${servico.id ? 'atualizado' : 'cadastrado'}.`);
+    (async () => {
+      try {
+        if (RemoteDB && RemoteDB.configured) {
+          const remoteSaved = await RemoteDB.saveServico(servico);
+          DB.saveServico(remoteSaved);
+        } else {
+          DB.saveServico(servico);
+        }
+        Modal.close('servicoModal');
+        renderServicos();
+        Notify.success('Serviço salvo!', `"${nome}" foi ${servico.id ? 'atualizado' : 'cadastrado'}.`);
+      } catch (e) {
+        DB.saveServico(servico);
+        Modal.close('servicoModal');
+        renderServicos();
+        Notify.warning('Operação parcial', 'Serviço salvo localmente. Houveram problemas ao salvar remotamente.');
+      }
+    })();
   }
 
   // CORRIGIDA: Exclusão com verificação de agendamentos futuros
@@ -377,9 +395,14 @@ function excluirServico(id) {
   }
   
   confirmDelete(`Excluir o serviço "${nome}"? Esta ação não pode ser desfeita.`, () => {
-    DB.deleteServico(id);
-    renderServicos();
-    Notify.success('Serviço removido', 'O serviço foi excluído com sucesso.');
+    (async () => {
+      try {
+        if (RemoteDB && RemoteDB.configured) await RemoteDB.deleteServico(id);
+      } catch (e) {}
+      DB.deleteServico(id);
+      renderServicos();
+      Notify.success('Serviço removido', 'O serviço foi excluído com sucesso.');
+    })();
   });
 }
 document.getElementById('searchServicos').addEventListener('input', e => {
@@ -387,13 +410,13 @@ document.getElementById('searchServicos').addEventListener('input', e => {
   renderServicos(e.target.value);
 });
 
-window.servicosCurrentPage = 1;
-renderServicos();
+// inicialização movida para DOMContentLoaded para suportar RemoteDB
 </script>
 
 <script src="../js/db.js"></script>
-<script src="../js/ui.js"></script>
 <script src="../js/auth.js"></script>
+<script src="../js/remote-db.js"></script>
+<script src="../js/ui.js"></script>
 <script src="../js/mobile.js"></script>
 </body>
 </html>

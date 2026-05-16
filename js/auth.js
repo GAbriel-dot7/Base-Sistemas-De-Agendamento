@@ -68,6 +68,16 @@ const Auth = {
     return this.get(this.KEYS.USUARIOS) || [];
   },
 
+  exportUsuarios() {
+    return this.getUsuarios();
+  },
+
+  importUsuarios(usuarios = []) {
+    if (!Array.isArray(usuarios)) return false;
+    this.set(this.KEYS.USUARIOS, usuarios);
+    return true;
+  },
+
   saveUsuario(usuario) {
     const usuarios = this.getUsuarios();
     if (usuario.id) {

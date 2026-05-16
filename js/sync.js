@@ -26,11 +26,14 @@ function saveSupabaseConfig() {
 
 function getBackupPayload() {
   return {
-    config: DB.getConfig(),
-    clientes: DB.getClientes(),
-    servicos: DB.getServicos(),
-    agendamentos: DB.getAgendamentos(),
-    historico: DB.getHistorico(),
+    usuarios: Auth.exportUsuarios ? Auth.exportUsuarios() : (Auth.getUsuarios ? Auth.getUsuarios() : []),
+    ...(DB.exportData ? DB.exportData() : {
+      config: DB.getConfig(),
+      clientes: DB.getClientes(),
+      servicos: DB.getServicos(),
+      agendamentos: DB.getAgendamentos(),
+      historico: DB.getHistorico(),
+    }),
     exportedAt: new Date().toISOString()
   };
 }
@@ -87,11 +90,8 @@ async function pullBackupFromSupabase() {
     if (res.ok) {
       const data = await res.json();
       // Persistir no LocalStorage
-      if (data.config) DB.saveConfig(data.config);
-      if (Array.isArray(data.clientes)) DB.set(DB.KEYS.CLIENTES, data.clientes);
-      if (Array.isArray(data.servicos)) DB.set(DB.KEYS.SERVICOS, data.servicos);
-      if (Array.isArray(data.agendamentos)) DB.set(DB.KEYS.AGENDAMENTOS, data.agendamentos);
-      if (Array.isArray(data.historico)) DB.set(DB.KEYS.HISTORICO, data.historico);
+      if (Auth.importUsuarios) Auth.importUsuarios(data.usuarios || []);
+      if (DB.importData) DB.importData(data);
       Notify.success('Backup restaurado', 'Dados importados do Supabase para o LocalStorage.');
       document.getElementById('supabaseStatus').textContent = 'Backup recuperado e importado.';
       setTimeout(() => window.location.reload(), 800);

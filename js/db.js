@@ -266,6 +266,37 @@ const DB = {
     };
   },
 
+  exportData() {
+    return {
+      config: this.getConfig(),
+      clientes: this.getClientes(),
+      servicos: this.getServicos(),
+      agendamentos: this.getAgendamentos(),
+      historico: this.getHistorico(),
+    };
+  },
+
+  importData(payload = {}) {
+    if (payload.config) this.saveConfig(payload.config);
+    if (Array.isArray(payload.clientes)) {
+      this.set(this.KEYS.CLIENTES, payload.clientes);
+      this._cache.CLIENTES = payload.clientes;
+    }
+    if (Array.isArray(payload.servicos)) {
+      this.set(this.KEYS.SERVICOS, payload.servicos);
+      this._cache.SERVICOS = payload.servicos;
+    }
+    if (Array.isArray(payload.agendamentos)) {
+      this.set(this.KEYS.AGENDAMENTOS, payload.agendamentos);
+      this._cache.AGENDAMENTOS = payload.agendamentos;
+    }
+    if (Array.isArray(payload.historico)) {
+      this.set(this.KEYS.HISTORICO, payload.historico);
+      this._cache.HISTORICO = payload.historico;
+    }
+    return true;
+  },
+
   // ──────────────────────────────────────────
   // SEED (Dados de Demonstração)
   // ──────────────────────────────────────────
